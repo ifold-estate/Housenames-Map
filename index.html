@@ -731,7 +731,10 @@
       if (urlParams.has('search')) preload = urlParams.get('search');
 
       // http://search.ifold.estate/?search=house
-      if (preload != '') document.getElementById("searchInput").value = preload;
+      if (preload != '') {
+        document.getElementById("searchInput").value = " ";
+        document.getElementById("searchInput").value = preload;
+      }
 
       document.querySelector('#searchInput').addEventListener('input', function()
       {
