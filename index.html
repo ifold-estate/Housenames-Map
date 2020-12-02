@@ -702,6 +702,7 @@
           markers[j].setZIndex(99);
         } );
       }
+      search(preload);
     }
 
     function selectIcon(icon) {
@@ -807,7 +808,6 @@
       // http://search.ifold.estate/?search=house
       if (preload != '') {
         document.getElementById("searchInput").value = preload;
-        search(preload);
       }
 
     </script>
