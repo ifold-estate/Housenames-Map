@@ -667,7 +667,7 @@
             '<div id="content">' +
             //'<h1 id="firstHeading" class="firstHeading">'+FullArray[i].label+'</h1>' +
               '<div id="bodyContent">' +
-                '<p><b>' + FullArray[i].label + '</b><br>' +
+                '<p><b>' + ' ' + FullArray[i].label + '</b><br>' +
                 FullArray[i].road + '<br>' +
                 FullArray[i].postcode +
                 // '<br>(' + FullArray[i].icon + ')' +
@@ -745,26 +745,16 @@
 
     <script>
 
-      const queryString = window.location.search;
-      const urlParams = new URLSearchParams(queryString);
-      var preload = '';
-      if (urlParams.has('search')) preload = urlParams.get('search');
-
-      // http://search.ifold.estate/?search=house
-      if (preload != '') {
-        document.getElementById("searchInput").value = preload;
-        search(preload);
-      }
-
-      document.querySelector('#searchInput').addEventListener('input', function()
-      {
+    document.querySelector('#searchInput').addEventListener('input',
+      function() {
         search(document.querySelector('#searchInput').value);
-      });
+      }
+    );
 
       function search(query) {
         var results = 0;
         var maxResults = 3;
-        var myQuery = query.toLowerCase();
+        var myQuery = ' ' + query.toLowerCase();
         var txtOut = document.getElementById("txtResult");
         txtOut.value = '';
         var newMapBounds = new google.maps.LatLngBounds();
@@ -807,7 +797,19 @@
         if ((myQuery.length < 2) && (results == 0)) newMapBounds = wholeMapBounds;
         map.fitBounds(newMapBounds, mapMarkerPadding);
       }
-    </script>
 
+
+      const queryString = window.location.search;
+      const urlParams = new URLSearchParams(queryString);
+      var preload = '';
+      if (urlParams.has('search')) preload = urlParams.get('search');
+
+      // http://search.ifold.estate/?search=house
+      if (preload != '') {
+        document.getElementById("searchInput").value = preload;
+        search(preload);
+      }
+
+    </script>
   </body>
 </html>
