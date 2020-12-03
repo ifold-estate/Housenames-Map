@@ -7,9 +7,9 @@
       defer
       >
     </script>
-    <link rel='stylesheet' media='screen and (min-width:    1px) and (max-width:  700px)' href='css/narrow.css' />
-    <link rel='stylesheet' media='screen and (min-width:  701px) and (max-width: 1200px)' href='css/medium.css' />
-    <link rel='stylesheet' media='screen and (min-width: 1201px) and (max-width: 3000px)' href='css/wide.css'   />
+    <link rel='stylesheet' media='screen and (min-width:    1px) and (max-width:  700px)' href='narrow.css' />
+    <link rel='stylesheet' media='screen and (min-width:  701px) and (max-width: 1200px)' href='medium.css' />
+    <link rel='stylesheet' media='screen and (min-width: 1201px) and (max-width: 3000px)' href='wide.css'   />
   </head>
 
   <body>
@@ -30,6 +30,7 @@
     	initMap();
       checkURL();
       search();
+      document.getElementById("txtResult").value = min-width;
     }
 
     function initMap() {
@@ -59,7 +60,7 @@
         rotateControl: true,
         fullscreenControl: false
       });
-      map.setTilt(60);
+      
       wholeMapBounds = new google.maps.LatLngBounds();
 
       for (let i = 0; i < FullArray.length; i++) {
