@@ -4,7 +4,7 @@
        #searchInput {
         position:         absolute;
         margin:           10px auto auto auto; 
-        width:            60%;
+        width:            300px;
         z-index:          9;
         background-color: transparent;
         padding:          0px;
@@ -20,7 +20,7 @@
       #txtResult {
         position:         absolute;
         margin:           10px auto auto auto; 
-        width:            60%;
+        width:            300px;
         z-index:          8;
         background-color: #fff; // white
         padding:          0px;
