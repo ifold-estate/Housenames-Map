@@ -2,7 +2,7 @@
        * element that contains the map. */
 
        #searchInput {
-        position:         absolute;
+        position:         fixed;
         margin:           10px auto auto auto; 
         width:            50%;
         height:           37px;
@@ -18,7 +18,7 @@
         color:            'black';
 
       #txtResult {
-        position:         absolute;
+        position:         fixed;
         margin:           10px auto auto auto; 
         width:            50%;
         height:           37px;
