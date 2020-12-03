@@ -1,4 +1,3 @@
-var FullArray = [];
 
 FullArray[0] = { label: 'Bus Stop (2)', road: 'Chalk Road', postcode: 'RH14 0UA', lat: 51.068232, lng: -0.544004, icon: 'Bus Stop', show: 1, hide: 0 };
 FullArray[1] = { label: 'Bus Stop (4)', road: 'The Drive', postcode: 'RH14 0TA', lat: 51.064137, lng: -0.530762, icon: 'Bus Stop', show: 1, hide: 0 };
