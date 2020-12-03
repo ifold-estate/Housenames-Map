@@ -1,40 +1,40 @@
-/* Always set the map height explicitly to define the size of the div
+    /* Always set the map height explicitly to define the size of the div
        * element that contains the map. */
 
        #searchInput {
         position:         relative;
-        top:              10px; 
+        top:              10px;
         left:             10px;
-        width:            60%;
-        height:           37px;
+        width:            400px;
         z-index:          9;
         background-color: transparent;
         padding:          0px;
         border-style:     none;
-        border-radius:    20px;
+        border-radius:    3px;
         text-align:       left;
         font-family:      'Roboto', sans-serif;
         font-size:        20px;
-        padding-left:     15px;
         color:            'black';
+        line-height:      37px;
+        padding-left:     15px;}
 
       #txtResult {
         position:         absolute;
-        top:              10px; 
-        left:             10px;  
-        width:            50%;
-        height:           37px;
+        top:              10px;
+        left:             10px;
+        width:            400px;
         z-index:          8;
-        background-color: #fff; // white
+        background-color: #fff;
         padding:          0px;
         border:           0.5px solid #000;
         border-style:     none;
-        border-radius:    20px;
+        border-radius:    3px;
         /* box-shadow:       0 1px 4px -1px rgba(0, 0, 0, 0.3); */
         text-align:       right;
         font-family:      'Roboto', sans-serif;
         font-size:        20px;
         color:            'black';
+        line-height:      37px;
         padding-right:    15px;
         pointer-events:   none;
       }
