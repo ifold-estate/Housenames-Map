@@ -5,6 +5,7 @@
         position:         relative;
         margin:           auto auto auto auto; 
         width:            50%;
+        height:           37px;
         z-index:          9;
         background-color: transparent;
         padding:          0px;
@@ -13,14 +14,14 @@
         text-align:       left;
         font-family:      'Roboto', sans-serif;
         font-size:        20px;
+        padding-left:     15px;
         color:            'black';
-        line-height:      37px;
-        padding-left:     15px;}
 
       #txtResult {
         position:         relative;
         margin:           auto auto auto auto; 
         width:            50%;
+        height:           37px;
         z-index:          8;
         background-color: #fff; // white
         padding:          0px;
@@ -32,7 +33,6 @@
         font-family:      'Roboto', sans-serif;
         font-size:        20px;
         color:            'black';
-        line-height:      37px;
         padding-right:    15px;
         pointer-events:   none;
       }
