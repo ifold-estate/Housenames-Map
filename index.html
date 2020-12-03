@@ -14,11 +14,7 @@
 
   <body>
     <div id="map"></div>
-    <div id="top">
-      <input id="txtResult" value="" />
-      <input id="searchInput" placeholder='type search here' results="0" />
-    </div>
-    
+
     <script> var FullArray = []; </script>
     <script src="data.js"></script>
     <script>
@@ -141,7 +137,14 @@
         iconUrl = 'https://drive.google.com/uc?export=view&id=' + link;
       return iconUrl;
       }
-
+    </script>
+    
+    <div id="top">
+      <input id="txtResult" value="" />
+      <input id="searchInput" placeholder='type search here' results="0" />
+    </div>
+    
+    <script>
       document.querySelector('#searchInput').addEventListener('input',
         function() {
           search();
