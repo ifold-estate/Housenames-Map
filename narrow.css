@@ -2,8 +2,8 @@
        * element that contains the map. */
 
        #searchInput {
-        position:         relative;
-        margin:           auto auto auto auto; 
+        position:         absolute;
+        margin:           10px auto auto auto; 
         width:            50%;
         height:           37px;
         z-index:          9;
@@ -18,8 +18,8 @@
         color:            'black';
 
       #txtResult {
-        position:         relative;
-        margin:           auto auto auto auto; 
+        position:         absolute;
+        margin:           10px auto auto auto; 
         width:            50%;
         height:           37px;
         z-index:          8;
