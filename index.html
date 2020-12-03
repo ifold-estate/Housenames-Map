@@ -26,121 +26,118 @@
 
       var markers = [];
       var infowindows = [];
+
+      function initScript() {
+        initMap();
+        checkURL();
+        search();
+      }
+
+      function initMap() {
+        var myStyles =[
+          {
+            featureType: "poi",
+            elementType: "labels",
+            stylers: [
+              { visibility: "off" }
+            ]
+          }
+        ];
+
+        map = new google.maps.Map(document.getElementById("map"), {
+          styles: myStyles,
+          zoomControl: true,
+          gestureHandling: "cooperative",
+          mapTypeId: "hybrid",
+          mapTypeControl: true,
+          mapTypeControlOptions: {
+            style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
+            position: google.maps.ControlPosition.TOP_RIGHT,
+          },
+          scaleControl: true,
+          streetViewControl: false,
+          rotateControl: true,
+          fullscreenControl: false
+        });
       
+        wholeMapBounds = new google.maps.LatLngBounds();
 
-      
-    function initScript() {
-    	initMap();
-      checkURL();
-      search();
-    }
+        for (let i = 0; i < FullArray.length; i++) {
+          if (!FullArray[i].hide) {         // Exclude any data marked as HIDE
+            let position = new google.maps.LatLng(FullArray[i].lat, FullArray[i].lng);
+            let contentString =
+              '<div id="content">' +
+              //'<h1 id="firstHeading" class="firstHeading">'+FullArray[i].label+'</h1>' +
+                '<div id="bodyContent">' +
+                  '<p><b>' + ' ' + FullArray[i].label + '</b><br>' +
+                  ' ' + FullArray[i].road + '<br>' +
+                  ' ' + FullArray[i].postcode +
+                  // '<br>(' + FullArray[i].icon + ')' +
+                  '</p>' +
+                "</div>" +
+              "</div>";
 
-    function initMap() {
+            markers.push(
+              new google.maps.Marker({
+                position: position ,
+                icon: {url:selectIcon(FullArray[i].icon), scaledSize: new google.maps.Size(32, 32)} ,
+                opacity: 1 - (FullArray[i].show * 0.1)
+              })
+            );
 
-      var myStyles =[
-      	{
-        	featureType: "poi",
-         	elementType: "labels",
-          stylers: [
-          	{ visibility: "off" }
-          ]
-        }
-    	];
+            infowindows.push(
+              new google.maps.InfoWindow({
+                content: contentString,
+                disableAutoPan: true
+              })
+            );
 
-    	map = new google.maps.Map(document.getElementById("map"), {
-        styles: myStyles,
-        zoomControl: true,
-        gestureHandling: "cooperative",
-        mapTypeId: "hybrid",
-        mapTypeControl: true,
-        mapTypeControlOptions: {
-          style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
-          position: google.maps.ControlPosition.TOP_RIGHT,
-        },
-        scaleControl: true,
-        streetViewControl: false,
-        rotateControl: true,
-        fullscreenControl: false
-      });
-      
-      wholeMapBounds = new google.maps.LatLngBounds();
+            wholeMapBounds.extend(position);
+          } // if
+        } // for
+        map.fitBounds(wholeMapBounds, mapMarkerPadding);
 
-      for (let i = 0; i < FullArray.length; i++) {
-        if (!FullArray[i].hide) {         // Exclude any data marked as HIDE
-          let position = new google.maps.LatLng(FullArray[i].lat, FullArray[i].lng);
-          let contentString =
-            '<div id="content">' +
-            //'<h1 id="firstHeading" class="firstHeading">'+FullArray[i].label+'</h1>' +
-              '<div id="bodyContent">' +
-                '<p><b>' + ' ' + FullArray[i].label + '</b><br>' +
-                ' ' + FullArray[i].road + '<br>' +
-                ' ' + FullArray[i].postcode +
-                // '<br>(' + FullArray[i].icon + ')' +
-                '</p>' +
-              "</div>" +
-            "</div>";
-
-          markers.push(
-            new google.maps.Marker({
-              position: position ,
-              icon: {url:selectIcon(FullArray[i].icon), scaledSize: new google.maps.Size(32, 32)} ,
-              opacity: 1 - (FullArray[i].show * 0.1)
-            })
-          );
-
-          infowindows.push(
-          	new google.maps.InfoWindow({
-            	content: contentString,
-              disableAutoPan: true
-            })
-          );
-
-          wholeMapBounds.extend(position);
+        for (let j=0; j< markers.length; j++) {
+          markers[j].addListener('click', function() {
+            infowindows[j].open(map, markers[j]);
+            infowindows[j].setZIndex(99);
+            markers[j].setZIndex(99);
+          } );
         }
       }
-      map.fitBounds(wholeMapBounds, mapMarkerPadding);
 
-      for (let j=0; j< markers.length; j++) {
-        markers[j].addListener('click', function() {
-          infowindows[j].open(map, markers[j]);
-          infowindows[j].setZIndex(99);
-          markers[j].setZIndex(99);
-        } );
+      function selectIcon(icon) {
+        let query = icon.substring(0,2).toLowerCase()
+        let link = "";
+        let iconUrl = "";
+
+        switch (query) {
+          case "ho": link = '1o181WJW7JZbksnXg0iBj2Vikj2VQ4ATK'; break; // House
+          case "bu": link = '1wT4_rmp7-hf5KyXrGn7nxw1tnrCZrV7Y'; break; // Bus Stop
+          case "ha": link = '1FD14dJTQ9Nx3-NFeP5nbhHYtsdlMUtqA'; break; // Hall
+          case "de": link = '1V1c-Nrg7Mo1CglC7APcpTASl4RV2Vi1k'; break; // Defibrillator
+          case "sh": link = '1a7Zw9UkRx-OeVWc4zoEENOzimsRl1buL'; break; // Shop
+          case "ga": link = '1NNLvfeLOVjmNvEyvRv7IAB--9br9ofDK'; break; // Garage
+          case "fi": link = '1_AtYmdmXJPNFBthKZEBgYiBXVKktahpH'; break; // Field
+          case "fa": link = '1F3HNd0vNzmDjy0ZvzSoL_OHTcBsw82iN'; break; // Farm
+          case "bt": link = '113lCl15nlA0Vaaab8Il8dcE9Asr7GRYU'; break; // BT Cabinet
+          case "si": link = '1U4vlECVPZI5NxbUCEiTH2dfbFuSIiXSD'; break; // Sign Post
+          case "15": link = '1Hw4jivITNJhTuutMXQo3KN2WM72uF_4-'; break; // 15mph Sign
+          case "20": link = '1eOaeF1MYmi0iA3EolX9bUfeTLmp7KBsv'; break; // 20mph Sign
+          case "30": link = '1Ub79PVqdnW-eVa9Gyu1eXYYYq1THa4o1'; break; // 30mph Sign
+          case "40": link = '1B4jyZNQ7BsVA2oZQ2hUV3Rx7MBpaQZ-L'; break;	// 40mph Sign
+          case "gr": link = '1DLVZrFLeNYCfMDXGBEvYyqRqTmucxnz_'; break;	// Grit Bin
+          case "sa": link = '1aLNZnwfXolkmJy26x5eEsAw_occkzBCF'; break; // Santa
+          case "el": link = '1rBVjAVW55Zw8LMBXNYPNmCYqxoOc6QqX'; break; // Elf
+          case "st": link = '16L1YWavDWDCRzy_uA6sk7qvKpRyB9BaR'; break; // Star
+          case "po": link = '1_1fCSIR0juis00Lv-RUyGn0RWQDE_d5s'; break; // Postbox
+
+          default:   link = '113lCl15nlA0Vaaab8Il8dcE9Asr7GRYU'; break; // BT Cabinet
+        }
+        //iconUrl = 'http://drive.google.com/file/d/' + link + '/view?usp=sharing';
+        iconUrl = 'https://drive.google.com/uc?export=view&id=' + link;
+      return iconUrl;
       }
-    }
-
-    function selectIcon(icon) {
-    	let query = icon.substring(0,2).toLowerCase()
-      let link = "";
-      let iconUrl = "";
-
-    	switch (query) {
-        case "ho": link = '1o181WJW7JZbksnXg0iBj2Vikj2VQ4ATK'; break; // House
-        case "bu": link = '1wT4_rmp7-hf5KyXrGn7nxw1tnrCZrV7Y'; break; // Bus Stop
-       	case "ha": link = '1FD14dJTQ9Nx3-NFeP5nbhHYtsdlMUtqA'; break; // Hall
-        case "de": link = '1V1c-Nrg7Mo1CglC7APcpTASl4RV2Vi1k'; break; // Defibrillator
-        case "sh": link = '1a7Zw9UkRx-OeVWc4zoEENOzimsRl1buL'; break; // Shop
-        case "ga": link = '1NNLvfeLOVjmNvEyvRv7IAB--9br9ofDK'; break; // Garage
-        case "fi": link = '1_AtYmdmXJPNFBthKZEBgYiBXVKktahpH'; break; // Field
-        case "fa": link = '1F3HNd0vNzmDjy0ZvzSoL_OHTcBsw82iN'; break; // Farm
-       	case "bt": link = '113lCl15nlA0Vaaab8Il8dcE9Asr7GRYU'; break; // BT Cabinet
-        case "si": link = '1U4vlECVPZI5NxbUCEiTH2dfbFuSIiXSD'; break; // Sign Post
-        case "15": link = '1Hw4jivITNJhTuutMXQo3KN2WM72uF_4-'; break; // 15mph Sign
-        case "20": link = '1eOaeF1MYmi0iA3EolX9bUfeTLmp7KBsv'; break; // 20mph Sign
-        case "30": link = '1Ub79PVqdnW-eVa9Gyu1eXYYYq1THa4o1'; break; // 30mph Sign
-        case "40": link = '1B4jyZNQ7BsVA2oZQ2hUV3Rx7MBpaQZ-L'; break;	// 40mph Sign
-        case "gr": link = '1DLVZrFLeNYCfMDXGBEvYyqRqTmucxnz_'; break;	// Grit Bin
-        case "sa": link = '1aLNZnwfXolkmJy26x5eEsAw_occkzBCF'; break; // Santa
-        case "el": link = '1rBVjAVW55Zw8LMBXNYPNmCYqxoOc6QqX'; break; // Elf
-        case "st": link = '16L1YWavDWDCRzy_uA6sk7qvKpRyB9BaR'; break; // Star
-        case "po": link = '1_1fCSIR0juis00Lv-RUyGn0RWQDE_d5s'; break; // Postbox
-
-        default:   link = '113lCl15nlA0Vaaab8Il8dcE9Asr7GRYU'; break; // BT Cabinet
-    	}
-      //iconUrl = 'http://drive.google.com/file/d/' + link + '/view?usp=sharing';
-      iconUrl = 'https://drive.google.com/uc?export=view&id=' + link;
-    return iconUrl;
-    }
     </script>
 
     <div id="top">
@@ -150,70 +147,71 @@
 
     <script>
 
-    document.querySelector('#searchInput').addEventListener('input',
-      function() {
-        search();
-      }
-    );
+      document.querySelector('#searchInput').addEventListener('input',
+        function() {
+          search();
+        }
+      );
 
-    function search() {
-      var results = 0;
-      var maxResults = 3;
-      var myQuery = ' ' + document.querySelector('#searchInput').value.toLowerCase();
-      var txtOut = document.getElementById("txtResult");
-      txtOut.value = '';
-      var newMapBounds = new google.maps.LatLngBounds();
+      function search() {
+        var results = 0;
+        var maxResults = 3;
+        var myQuery = ' ' + document.querySelector('#searchInput').value.toLowerCase();
+        var txtOut = document.getElementById("txtResult");
+        txtOut.value = '';
+        var newMapBounds = new google.maps.LatLngBounds();
 
-      for (let i = 0; i < markers.length; i++) {			// Loop through all the markers
-      	let myText = infowindows[i].content.toString().toLowerCase();
-      	let alwaysShow = markers[i].opacity;
-        infowindows[i].close();
+        for (let i = 0; i < markers.length; i++) {			// Loop through all the markers
+          let myText = infowindows[i].content.toString().toLowerCase();
+          let alwaysShow = markers[i].opacity;
+          infowindows[i].close();
 
-       	if ((myQuery.length >= 2) && (myText.includes(myQuery))) {				// for markers where query is found
-       		markers[i].setMap(map);
-          markers[i].setZIndex(9);
-       		if (results <= maxResults) {
-          	infowindows[i].open(map, markers[i]);
-            infowindows[i].setZIndex(8);
+          if ((myQuery.length >= 2) && (myText.includes(myQuery))) {				// for markers where query is found
+            markers[i].setMap(map);
+            markers[i].setZIndex(9);
+            if (results <= maxResults) {
+              infowindows[i].open(map, markers[i]);
+              infowindows[i].setZIndex(8);
+            }
+            newMapBounds.extend(markers[i].position);
+            results++;
           }
-   				newMapBounds.extend(markers[i].position);
-          results++;
-        }
-        else if (myText.includes('kelsey hall')) {
-        	markers[i].setMap(map);
-          markers[i].setZIndex(8);
-          infowindows[i].open(map, markers[i]);
-          infowindows[i].setZIndex(9);
-          newMapBounds.extend(markers[i].position);
-        }
-        else if (alwaysShow < 1) {
-        	markers[i].setMap(map);
-          markers[i].setZIndex(7);
-          infowindows[i].close();
-        }
-        else {
-        	markers[i].setMap(null);								// for excluded markers
-          infowindows[i].close();
-        }
-     	}
-  		txtOut.value = results;
-      if ((myQuery.length >= 2) && (results == 0)) txtOut.value = "No Match";
-      if ((myQuery.length < 2) && (results == 0)) txtOut.value = "";
-      if ((myQuery.length < 2) && (results == 0)) newMapBounds = wholeMapBounds;
-      map.fitBounds(newMapBounds, mapMarkerPadding);
-    }
-
-    function checkURL() {
-      const queryString = window.location.search;
-      const urlParams = new URLSearchParams(queryString);
-      let preload = '';
-      if (urlParams.has('search')) preload = urlParams.get('search');
-
-      // http://search.ifold.estate/?search=house
-      if (preload != '') {
-        document.getElementById("searchInput").value = preload;
+          else if (myText.includes('kelsey hall')) {
+            markers[i].setMap(map);
+            markers[i].setZIndex(8);
+            infowindows[i].open(map, markers[i]);
+            infowindows[i].setZIndex(9);
+            newMapBounds.extend(markers[i].position);
+          }
+          else if (alwaysShow < 1) {
+            markers[i].setMap(map);
+            markers[i].setZIndex(7);
+            infowindows[i].close();
+          }
+          else {
+            markers[i].setMap(null);								// for excluded markers
+            infowindows[i].close();
+          }
+        } // for
+        
+        txtOut.value = results;
+        if ((myQuery.length >= 2) && (results == 0)) txtOut.value = "No Match";
+        if ((myQuery.length < 2) && (results == 0)) txtOut.value = "";
+        if ((myQuery.length < 2) && (results == 0)) newMapBounds = wholeMapBounds;
+        map.fitBounds(newMapBounds, mapMarkerPadding);
       }
-    }
+
+      function checkURL() {
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+        let preload = '';
+        if (urlParams.has('search')) preload = urlParams.get('search');
+
+        // http://search.ifold.estate/?search=house
+        if (preload != '') {
+          document.getElementById("searchInput").value = preload;
+        }
+      }
 
     </script>
   </body>
