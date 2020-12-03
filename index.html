@@ -3,7 +3,7 @@
   <head>
     <title>Housenames Map</title>
     <script
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBmn0grPmgZu_CrMWAXTboiXfwONTGE_rM&callback=initMap&libraries=&v=weekly"
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBmn0grPmgZu_CrMWAXTboiXfwONTGE_rM&callback=initScript&libraries=&v=weekly"
       defer
       >
     </script>
@@ -631,6 +631,12 @@
       FullArray[553] = { label: 'Shines 3', road: 'The Drive', postcode: 'RH14', lat: 51.0683, lng: -0.53566, icon: 'Star', show: 0, hide: 0 };
       FullArray[554] = { label: 'Shines 4', road: 'The Drive', postcode: 'RH14', lat: 51.06834, lng: -0.53587, icon: 'Star', show: 0, hide: 0 };
 
+    function initScript() {
+    	initMap();
+      search('RH14');
+      checkURL();
+    }
+
     function initMap() {
 
       var myStyles =[
@@ -668,8 +674,8 @@
             //'<h1 id="firstHeading" class="firstHeading">'+FullArray[i].label+'</h1>' +
               '<div id="bodyContent">' +
                 '<p><b>' + ' ' + FullArray[i].label + '</b><br>' +
-                FullArray[i].road + '<br>' +
-                FullArray[i].postcode +
+                ' ' + FullArray[i].road + '<br>' +
+                ' ' + FullArray[i].postcode +
                 // '<br>(' + FullArray[i].icon + ')' +
                 '</p>' +
               "</div>" +
@@ -702,7 +708,6 @@
           markers[j].setZIndex(99);
         } );
       }
-      search(preload);
     }
 
     function selectIcon(icon) {
@@ -752,54 +757,54 @@
       }
     );
 
-      function search(query) {
-        var results = 0;
-        var maxResults = 3;
-        var myQuery = ' ' + query.toLowerCase();
-        var txtOut = document.getElementById("txtResult");
-        txtOut.value = '';
-        var newMapBounds = new google.maps.LatLngBounds();
+    function search(query) {
+      var results = 0;
+      var maxResults = 3;
+      var myQuery = ' ' + query.toLowerCase();
+      var txtOut = document.getElementById("txtResult");
+      txtOut.value = '';
+      var newMapBounds = new google.maps.LatLngBounds();
 
-        for (let i = 0; i < markers.length; i++) {			// Loop through all the markers
-        	let myText = infowindows[i].content.toString().toLowerCase();
-        	let alwaysShow = markers[i].opacity;
+      for (let i = 0; i < markers.length; i++) {			// Loop through all the markers
+      	let myText = infowindows[i].content.toString().toLowerCase();
+      	let alwaysShow = markers[i].opacity;
+        infowindows[i].close();
+
+       	if ((myQuery.length >= 2) && (myText.includes(myQuery))) {				// for markers where query is found
+       		markers[i].setMap(map);
+          markers[i].setZIndex(9);
+       		if (results <= maxResults) {
+          	infowindows[i].open(map, markers[i]);
+            infowindows[i].setZIndex(8);
+          }
+   				newMapBounds.extend(markers[i].position);
+          results++;
+        }
+        else if (myText.includes('kelsey hall')) {
+        	markers[i].setMap(map);
+          markers[i].setZIndex(8);
+          infowindows[i].open(map, markers[i]);
+          infowindows[i].setZIndex(9);
+          newMapBounds.extend(markers[i].position);
+        }
+        else if (alwaysShow < 1) {
+        	markers[i].setMap(map);
+          markers[i].setZIndex(7);
           infowindows[i].close();
+        }
+        else {
+        	markers[i].setMap(null);								// for excluded markers
+          infowindows[i].close();
+        }
+     	}
+  		txtOut.value = results;
+      if ((myQuery.length >= 2) && (results == 0)) txtOut.value = "No Match";
+      if ((myQuery.length < 2) && (results == 0)) txtOut.value = "";
+      if ((myQuery.length < 2) && (results == 0)) newMapBounds = wholeMapBounds;
+      map.fitBounds(newMapBounds, mapMarkerPadding);
+    }
 
-         	if ((myQuery.length >= 2) && (myText.includes(myQuery))) {				// for markers where query is found
-         		markers[i].setMap(map);
-            markers[i].setZIndex(9);
-         		if (results <= maxResults) {
-            	infowindows[i].open(map, markers[i]);
-              infowindows[i].setZIndex(8);
-            }
-     				newMapBounds.extend(markers[i].position);
-            results++;
-          }
-          else if (myText.includes('kelsey hall')) {
-          	markers[i].setMap(map);
-            markers[i].setZIndex(8);
-            infowindows[i].open(map, markers[i]);
-            infowindows[i].setZIndex(9);
-            newMapBounds.extend(markers[i].position);
-          }
-          else if (alwaysShow < 1) {
-          	markers[i].setMap(map);
-            markers[i].setZIndex(7);
-            infowindows[i].close();
-          }
-          else {
-          	markers[i].setMap(null);								// for excluded markers
-            infowindows[i].close();
-          }
-       	}
-    		txtOut.value = results;
-        if ((myQuery.length >= 2) && (results == 0)) txtOut.value = "No Match";
-        if ((myQuery.length < 2) && (results == 0)) txtOut.value = "";
-        if ((myQuery.length < 2) && (results == 0)) newMapBounds = wholeMapBounds;
-        map.fitBounds(newMapBounds, mapMarkerPadding);
-      }
-
-
+    function checkURL() {
       const queryString = window.location.search;
       const urlParams = new URLSearchParams(queryString);
       var preload = '';
@@ -809,6 +814,7 @@
       if (preload != '') {
         document.getElementById("searchInput").value = preload;
       }
+    }
 
     </script>
   </body>
