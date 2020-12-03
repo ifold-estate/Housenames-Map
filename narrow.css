@@ -4,13 +4,13 @@
        #searchInput {
         position:         relative;
         top:              10px;
-        left:             10px;
-        width:            400px;
+        margin:           auto; 
+        width:            80%;
         z-index:          9;
         background-color: transparent;
         padding:          0px;
         border-style:     none;
-        border-radius:    3px;
+        border-radius:    20px;
         text-align:       left;
         font-family:      'Roboto', sans-serif;
         font-size:        20px;
@@ -21,14 +21,14 @@
       #txtResult {
         position:         absolute;
         top:              10px;
-        left:             10px;
-        width:            400px;
+        margin:           auto;
+        width:            80%;
         z-index:          8;
         background-color: #fff;
         padding:          0px;
         border:           0.5px solid #000;
         border-style:     none;
-        border-radius:    3px;
+        border-radius:    20px;
         /* box-shadow:       0 1px 4px -1px rgba(0, 0, 0, 0.3); */
         text-align:       right;
         font-family:      'Roboto', sans-serif;
