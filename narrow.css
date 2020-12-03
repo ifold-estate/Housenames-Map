@@ -2,7 +2,7 @@
        * element that contains the map. */
 
        #searchInput {
-        position:         relative;
+        position:         absolute;
         top:              10px;
         margin:           auto; 
         width:            80%;
