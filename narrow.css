@@ -2,10 +2,9 @@
        * element that contains the map. */
 
        #searchInput {
-        /*position:         absolute;
-        top:              10px;*/
+        position:         absolute;
         margin:           10px auto auto auto; 
-        width:            80%;
+        width:            60%;
         z-index:          9;
         background-color: transparent;
         padding:          0px;
@@ -19,12 +18,11 @@
         padding-left:     15px;}
 
       #txtResult {
-        /*position:         absolute;
-        top:              10px;*/
+        position:         absolute;
         margin:           10px auto auto auto; 
-        width:            80%;
+        width:            60%;
         z-index:          8;
-        background-color: #fff;
+        background-color: #fff; // white
         padding:          0px;
         border:           0.5px solid #000;
         border-style:     none;
