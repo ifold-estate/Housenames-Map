@@ -165,7 +165,7 @@
           let myText = infowindows[i].content.toString().toLowerCase();
           let alwaysShow = markers[i].opacity;
           infowindows[i].close();
-
+/*
           if ((myQuery.length >= 2) && (myText.includes(myQuery))) {				// for markers where query is found
             markers[i].setMap(map);
             markers[i].setZIndex(9);
@@ -182,8 +182,8 @@
             infowindows[i].open(map, markers[i]);
             infowindows[i].setZIndex(9);
             newMapBounds.extend(markers[i].position);
-            document.getElementById("searchInput").focus();
           }
+   */
           else if (alwaysShow < 1) {
             markers[i].setMap(map);
             markers[i].setZIndex(7);
@@ -194,13 +194,11 @@
             infowindows[i].close();
           }
         } // for
-        /*
         txtOut.value = results;
         if ((myQuery.length >= 2) && (results == 0)) txtOut.value = "No Match";
         if ((myQuery.length < 2) && (results == 0)) txtOut.value = "";
         if ((myQuery.length < 2) && (results == 0)) newMapBounds = wholeMapBounds;
         map.fitBounds(newMapBounds, mapMarkerPadding);
-        */
       }
 
       function checkURL() {
