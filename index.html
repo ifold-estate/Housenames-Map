@@ -99,7 +99,7 @@
 
         for (let j=0; j< markers.length; j++) {
           markers[j].addListener('click', function() {
-            infowindows[j].open(map, markers[j]);
+            infoWindow.open({map : map, anchor: markers[i], shouldFocus: false});      // was infowindows[i].open(map, markers[i]);infowindows[j].open(map, markers[j]);
             infowindows[j].setZIndex(99);
             markers[j].setZIndex(99);
           } );
@@ -172,7 +172,7 @@
             markers[i].setMap(map);
             markers[i].setZIndex(9);
             if (results <= maxResults) {
-              infoWindow.open({anchor: markers[i], shouldFocus: false});    // was infowindows[i].open(map, markers[i]);
+              infoWindow.open({map : map, anchor: markers[i], shouldFocus: false});    // was infowindows[i].open(map, markers[i]);
               infowindows[i].setZIndex(8);
             }
             newMapBounds.extend(markers[i].position);
@@ -182,7 +182,7 @@
           else if (myText.includes('kelsey hall')) {
             markers[i].setMap(map);
             markers[i].setZIndex(8);
-            infoWindow.open({anchor: markers[i], shouldFocus: false});      // was infowindows[i].open(map, markers[i]);
+            infoWindow.open({map : map, anchor: markers[i], shouldFocus: false});      // was infowindows[i].open(map, markers[i]);
             infowindows[i].setZIndex(9);
             newMapBounds.extend(markers[i].position);
           }
