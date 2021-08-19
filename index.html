@@ -193,12 +193,14 @@
             markers[i].setMap(null);								// for excluded markers
             infowindows[i].close();
           }
+          document.getElementById("searchInput").focus();
         } // for
         txtOut.value = results;
         if ((myQuery.length >= 2) && (results == 0)) txtOut.value = "No Match";
         if ((myQuery.length < 2) && (results == 0)) txtOut.value = "";
         if ((myQuery.length < 2) && (results == 0)) newMapBounds = wholeMapBounds;
         map.fitBounds(newMapBounds, mapMarkerPadding);
+        document.getElementById("searchInput").focus();
       }
 
       function checkURL() {
