@@ -149,7 +149,7 @@
       document.querySelector('#searchInput').addEventListener('input',
         function() {
           search();
-          document.getElementById("top").focus();
+          document.getElementById("searchInput").focus();
         }
       );
 
@@ -182,6 +182,7 @@
             infowindows[i].open(map, markers[i]);
             infowindows[i].setZIndex(9);
             newMapBounds.extend(markers[i].position);
+            document.getElementById("searchInput").focus();
           }
           else if (alwaysShow < 1) {
             markers[i].setMap(map);
