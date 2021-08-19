@@ -99,7 +99,7 @@
 
         for (let j=0; j< markers.length; j++) {
           markers[j].addListener('click', function() {
-            infoWindow.open({map : map, anchor: markers[i], shouldFocus: false});      // was infowindows[i].open(map, markers[i]);infowindows[j].open(map, markers[j]);
+            infoWindows[i].open({map : map, anchor: markers[i], shouldFocus: false});      // was infowindows[i].open(map, markers[i]);infowindows[j].open(map, markers[j]);
             infowindows[j].setZIndex(99);
             markers[j].setZIndex(99);
           } );
@@ -172,7 +172,7 @@
             markers[i].setMap(map);
             markers[i].setZIndex(9);
             if (results <= maxResults) {
-              infoWindow.open({map : map, anchor: markers[i], shouldFocus: false});    // was infowindows[i].open(map, markers[i]);
+              infoWindows[i].open({map : map, anchor: markers[i], shouldFocus: false});    // was infowindows[i].open(map, markers[i]);
               infowindows[i].setZIndex(8);
             }
             newMapBounds.extend(markers[i].position);
@@ -182,7 +182,7 @@
           else if (myText.includes('kelsey hall')) {
             markers[i].setMap(map);
             markers[i].setZIndex(8);
-            infoWindow.open({map : map, anchor: markers[i], shouldFocus: false});      // was infowindows[i].open(map, markers[i]);
+            infoWindows[i].open({map : map, anchor: markers[i], shouldFocus: false});      // was infowindows[i].open(map, markers[i]);
             infowindows[i].setZIndex(9);
             newMapBounds.extend(markers[i].position);
           }
@@ -199,7 +199,7 @@
         } // for
         txtOut.value = results;
         if ((myQuery.length >= 2) && (results == 0)) txtOut.value = "No Match";
-        if ((myQuery.length < 2) && (results == 0)) txtOut.value = "w:" + window.innerWidth;
+        if ((myQuery.length < 2) && (results == 0)) txtOut.value = "";                    // w:" + window.innerWidth;
         if ((myQuery.length < 2) && (results == 0)) newMapBounds = wholeMapBounds;
         map.fitBounds(newMapBounds, mapMarkerPadding);
         // document.getElementById("searchInput").focus();
