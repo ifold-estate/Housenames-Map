@@ -165,18 +165,18 @@
           let myText = infowindows[i].content.toString().toLowerCase();
           let alwaysShow = markers[i].opacity;
           infowindows[i].close();
-/*
+
           if ((myQuery.length >= 2) && (myText.includes(myQuery))) {				// for markers where query is found
             markers[i].setMap(map);
             markers[i].setZIndex(9);
             if (results <= maxResults) {
-              infowindows[i].open(map, markers[i]);
+              //infowindows[i].open(map, markers[i]);
               infowindows[i].setZIndex(8);
             }
             newMapBounds.extend(markers[i].position);
             results++;
           }
-    */
+    
           else if (myText.includes('kelsey hall')) {
             markers[i].setMap(map);
             markers[i].setZIndex(8);
