@@ -142,14 +142,14 @@
     
     <div id="top">
       <input id="txtResult" value="" />
-      <input id="searchInput" placeholder='type search here' results="0" />
+      <input id="searchInput" type="text" placeholder='type search here' />
     </div>
     
     <script>
       document.querySelector('#searchInput').addEventListener('input',
         function() {
           search();
-          document.getElementById("searchInput").autofocus();
+          document.getElementById("searchInput").focus();
         }
       );
 
