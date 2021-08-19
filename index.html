@@ -149,6 +149,7 @@
       document.querySelector('#searchInput').addEventListener('input',
         function() {
           search();
+          document.getElementById("searchInput").focus();
         }
       );
 
@@ -198,7 +199,6 @@
         if ((myQuery.length < 2) && (results == 0)) txtOut.value = "";
         if ((myQuery.length < 2) && (results == 0)) newMapBounds = wholeMapBounds;
         map.fitBounds(newMapBounds, mapMarkerPadding);
-        document.getElementById("txtResult").focus();
       }
 
       function checkURL() {
