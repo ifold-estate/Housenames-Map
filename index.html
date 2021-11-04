@@ -158,7 +158,6 @@
         var results = 0;
         var maxResults = 3;
         var myQuery = document.querySelector('#searchInput').value.toLowerCase();
-        //var myQueries = [];
         var txtOut = document.getElementById("txtResult");
         txtOut.value = '';
         var newMapBounds = new google.maps.LatLngBounds();
@@ -205,11 +204,11 @@
           }
         } // for
         txtOut.value = "r:" + results + " w:" + myQueries.length;
-        /*
+        
         if ((myQuery.length >= 2) && (results == 0)) txtOut.value = "No Match";
         if ((myQuery.length < 2) && (results == 0)) txtOut.value = "";                    // "w:" + window.innerWidth;
         if ((myQuery.length < 2) && (results == 0)) newMapBounds = wholeMapBounds;
-        */
+
         map.fitBounds(newMapBounds, mapMarkerPadding);
       }
 
