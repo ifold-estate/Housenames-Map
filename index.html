@@ -158,12 +158,12 @@
         var results = 0;
         var maxResults = 3;
         var myQuery = document.querySelector('#searchInput').value.toLowerCase();
-        var myQueries = [];
+        //var myQueries = [];
         var txtOut = document.getElementById("txtResult");
         txtOut.value = '';
         var newMapBounds = new google.maps.LatLngBounds();
         
-        myQueries = myQuery.split();                      // creates an array of words
+        var myQueries = myQuery.split();                      // creates an array of words
           
         for (let i = 0; i < markers.length; i++) {			// Loop through all the markers
           let myText = infowindows[i].content.toString().toLowerCase();
@@ -204,9 +204,9 @@
             infowindows[i].close();
           }
         } // for
-        txtOut.value = results;
-        if ((myQuery.length >= 2) && (results == 0)) txtOut.value = "No Match";
-        if ((myQuery.length < 2) && (results == 0)) txtOut.value = "words: " + myQueries.length;                    // "w:" + window.innerWidth;
+        txtOut.value = "r:" + results + "w:" + myQueries.length;
+        if ((myQuery.length >= 2) && (results == 0)) txtOut.value = "r:" + results + "w:" + myQueries.length; // "No Match";
+        if ((myQuery.length < 2) && (results == 0)) txtOut.value = "";                    // "w:" + window.innerWidth;
         if ((myQuery.length < 2) && (results == 0)) newMapBounds = wholeMapBounds;
         map.fitBounds(newMapBounds, mapMarkerPadding);
       }
