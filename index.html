@@ -171,12 +171,10 @@
           infowindows[i].close();
           
           valid = true;
-          /*
           for (let subword = 0; subword < myQueries.length; subword++) {
             valid = myText.includes(myQueries[subword]);     // 'space' prevents searching mid-word
             if (valid === false) { break; }
           }
-          */
           
           if (valid) {				                        // for markers where query is found
             markers[i].setMap(map);
@@ -208,7 +206,7 @@
         } // for
         txtOut.value = "r:" + results + " w:" + myQueries.length;
         /*
-        if ((myQuery.length >= 2) && (results == 0)) txtOut.value = "r:" + results + "w:" + myQueries.length; // "No Match";
+        if ((myQuery.length >= 2) && (results == 0)) txtOut.value = "No Match";
         if ((myQuery.length < 2) && (results == 0)) txtOut.value = "";                    // "w:" + window.innerWidth;
         if ((myQuery.length < 2) && (results == 0)) newMapBounds = wholeMapBounds;
         */
