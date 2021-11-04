@@ -8,7 +8,7 @@
       >
     </script>
     <link rel='stylesheet' media='screen and (min-width:    1px) and (max-width:  783px)' href='narrow.css' />
-    <link rel='stylesheet' media='screen and (min-width:  784px) and (max-width: 1176px)' href='medium.css' /> // 980 +/- 20%
+    <link rel='stylesheet' media='screen and (min-width:  784px) and (max-width: 1176px)' href='medium.css' /> 
     <link rel='stylesheet' media='screen and (min-width: 1177px) and (max-width: 3000px)' href='wide.css'   />
   </head>
 
@@ -66,7 +66,7 @@
           if (!FullArray[i].hide) {         // Exclude any data marked as HIDE
             let position = new google.maps.LatLng(FullArray[i].lat, FullArray[i].lng);
             let contentString =
-              '<div id="content" style="font-size: ' + parseFloat(window.getComputedStyle(document.getElementById('txtResult'), null).getPropertyValue('font-size')) + 'px">' +
+              '<div id="content" style="font-size: ' + 0.8 * parseFloat(window.getComputedStyle(document.getElementById('txtResult'), null).getPropertyValue('font-size')) + 'px">' +
               //'<h1 id="firstHeading" class="firstHeading">'+FullArray[i].label+'</h1>' +
                 '<div id="bodyContent">' +
                   '<p><b>' + ' ' + FullArray[i].label + '</b><br>' +
