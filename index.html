@@ -179,7 +179,7 @@
             markers[i].setMap(map);
             markers[i].setZIndex(9);
             if (results <= maxResults) {
-              infowindows[i].open({map : map, anchor: markers[i]}); //, shouldFocus: false});    // was infowindows[i].open(map, markers[i]);
+              infowindows[i].open({map : map, anchor: markers[i], shouldFocus: false});    // was infowindows[i].open(map, markers[i]);
               infowindows[i].setZIndex(8);
             }
             newMapBounds.extend(markers[i].position);
