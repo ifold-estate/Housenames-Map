@@ -157,17 +157,26 @@
       function search() {
         var results = 0;
         var maxResults = 3;
-        var myQuery = ' ' + document.querySelector('#searchInput').value.toLowerCase();
+        var myQuery = document.querySelector('#searchInput').value.toLowerCase();
+        var myQueries = [];
         var txtOut = document.getElementById("txtResult");
         txtOut.value = '';
         var newMapBounds = new google.maps.LatLngBounds();
-
+        
+        myQueries = myQuery.split();                      // creates an array of words
+          
         for (let i = 0; i < markers.length; i++) {			// Loop through all the markers
           let myText = infowindows[i].content.toString().toLowerCase();
           let alwaysShow = markers[i].opacity;
           infowindows[i].close();
 
-          if ((myQuery.length >= 2) && (myText.includes(myQuery))) {				// for markers where query is found
+          valid = true;
+          for (let x = 0; x < myQueries.length; x++) {
+            valid = valid && (myQueries[x].length >= 2) && (myText.includes(myQueries[x])))     // 'space' prevents searching mid-word
+            if (valid === false) { break; }
+          }
+          
+          if (valid) {				                        // for markers where query is found
             markers[i].setMap(map);
             markers[i].setZIndex(9);
             if (results <= maxResults) {
