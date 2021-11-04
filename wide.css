@@ -3,7 +3,7 @@
 
        #searchInput {
         position:         relative;
-        top:              20px;
+        top:              -3px;
         left:             20px;
         width:            800px;
         z-index:          9;
