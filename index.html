@@ -68,9 +68,9 @@
             let position = new google.maps.LatLng(FullArray[i].lat, FullArray[i].lng);
             let contentString =
               '<div id="content">' +
-                '<div id="bodyContent" <style="font-size:' + (0.8 * 20) + 'px;">' +
-                  '<p style="font-size:20px; color:black;"><b>' + FullArray[i].label + '</b><br></p>' +
-                  '<p style="font-size:15px; color:gray; ">   ' + FullArray[i].road  + ', ' + FullArray[i].postcode + '</p>' +
+                '<div id="bodyContent"' +
+                  '<a style="font-size:' + scalex + 'px; color:black;"><b>' + FullArray[i].label + '</b><br></a>' +
+                  '<a style="font-size:' + scalex + 'px; color:blue; ">   ' + FullArray[i].road  + ', ' + FullArray[i].postcode + '</a>' +
                 "</div>" +
               "</div>";
 
