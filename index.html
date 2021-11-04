@@ -170,10 +170,10 @@
           let alwaysShow = markers[i].opacity;
           infowindows[i].close();
 
-          valid = true;
-          for (let x = 0; x < myQueries.length; x++) {
-            valid = valid && (myQueries[x].length >= 2) && (myText.includes(myQueries[x])))     // 'space' prevents searching mid-word
-            if (valid === false) { break; }
+          validity = true;
+          for (let subword = 0; subword < myQueries.length; subword++) {
+            validity = validity && (myQueries[x].length >= 2) && (myText.includes(myQueries[subword])))     // 'space' prevents searching mid-word
+            if (validity === false) { break; }
           }
           
           if (valid) {				                        // for markers where query is found
@@ -204,7 +204,7 @@
             infowindows[i].close();
           }
         } // for
-        txtOut.value = "r:" + results + "w:" + myQueries.length;
+        txtOut.value = myQueries; //"r:" + results + "w:" + myQueries.length;
         if ((myQuery.length >= 2) && (results == 0)) txtOut.value = "r:" + results + "w:" + myQueries.length; // "No Match";
         if ((myQuery.length < 2) && (results == 0)) txtOut.value = "";                    // "w:" + window.innerWidth;
         if ((myQuery.length < 2) && (results == 0)) newMapBounds = wholeMapBounds;
