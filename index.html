@@ -61,17 +61,17 @@
         });
       
         wholeMapBounds = new google.maps.LatLngBounds();
-        let scaler = parseFloat(window.getComputedStyle(document.getElementById('txtResult'), null).getPropertyValue('font-size'));
+        let scalex = parseFloat(window.getComputedStyle(document.getElementById('txtResult'), null).getPropertyValue('font-size'));
         
         for (let i = 0; i < FullArray.length; i++) {
           if (!FullArray[i].hide) {         // Exclude any data marked as HIDE
             let position = new google.maps.LatLng(FullArray[i].lat, FullArray[i].lng);
             let contentString =
-              '<div id="content" style="font-size: ' + 0.8 * scaler + 'px">' +
+              '<div id="content" style="font-size: ' + (0.8 * 20) + 'px">' +
               //'<h1 id="firstHeading" class="firstHeading">'+FullArray[i].label+'</h1>' +
-                '<div id="bodyContent" <style="font-size: ' + 0.8 * scaler + 'px">' +
+                '<div id="bodyContent" <style="font-size: ' + (0.8 * 20) + 'px">' +
                   '<p><b>' + FullArray[i].label + '</b><br>' +
-                  '<style="font-size: ' + 0.6 * scaler + 'px">' +FullArray[i].road + ', ' + FullArray[i].postcode +
+                  FullArray[i].road + ', ' + FullArray[i].postcode +
                   '</p>' +
                 "</div>" +
               "</div>";
