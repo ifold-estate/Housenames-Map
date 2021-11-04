@@ -69,8 +69,7 @@
             let contentString =
               '<div id="content">' +
                 '<div id="bodyContent"' +
-                  // '<a style="font-size:' + (0.8 * scalex) + 'px; color:black;"><b>' + FullArray[i].label + '</b></a>' +
-                  '<a style="font-size:' + (0.8 * scalex) + 'px; color:black;">' + FullArray[i].label + '</a>' +
+                  '<a style="font-size:' + (0.8 * scalex) + 'px; color:black;"><b>' + FullArray[i].label + '</b></a>' +
                   '<a style="font-size:' + (0.4 * scalex) + 'px; color:blue; "><br>' + FullArray[i].road  + ', ' + FullArray[i].postcode + '</a>' +
                 "</div>" +
               "</div>";
@@ -92,17 +91,17 @@
 
             wholeMapBounds.extend(position);
           } // if
-        } // for
+        } // for i loop
         map.fitBounds(wholeMapBounds, mapMarkerPadding);
 
         for (let j=0; j< markers.length; j++) {
           markers[j].addListener('click', function() {
-            infowindows[i].open({map : map, anchor: markers[i], shouldFocus: false});      // was infowindows[i].open(map, markers[i]);infowindows[j].open(map, markers[j]);
+            infowindows[j].open({map : map, anchor: markers[j], shouldFocus: false});      // was infowindows[i].open(map, markers[i]);infowindows[j].open(map, markers[j]);
             infowindows[j].setZIndex(99);
             markers[j].setZIndex(99);
           } );
-        }
-      }
+        } // for j loop
+      } // end of initMap function
 
       function selectIcon(icon) {
         let query = icon.substring(0,2).toLowerCase()
