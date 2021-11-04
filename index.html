@@ -172,7 +172,7 @@
 
           validity = true;
           for (let subword = 0; subword < myQueries.length; subword++) {
-            validity = validity && (myQueries[x].length >= 2) && (myText.includes(myQueries[subword])))     // 'space' prevents searching mid-word
+            validity = myText.includes(myQueries[subword]);     // 'space' prevents searching mid-word
             if (validity === false) { break; }
           }
           
