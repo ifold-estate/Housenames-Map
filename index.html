@@ -171,7 +171,7 @@
           
           valid = true;
           for (let subword = 0; subword < myQueries.length; subword++) {
-            valid = valid && ((myQuery.length >= 2) && (myText.includes(myQueries[subword])));     // 'space' prevents searching mid-word
+            valid = valid && ((myQuery.length >= 2) && (myText.includes(myQueries[subword])));     
             if (valid === false) { break; }
           }
           
@@ -179,7 +179,7 @@
             markers[i].setMap(map);
             markers[i].setZIndex(9);
             if (results <= maxResults) {
-              infowindows[i].open({map : map, anchor: markers[i], shouldFocus: false});    // was infowindows[i].open(map, markers[i]);
+              infowindows[i].open({map : map, anchor: markers[i]}); //, shouldFocus: false});    // was infowindows[i].open(map, markers[i]);
               infowindows[i].setZIndex(8);
             }
             newMapBounds.extend(markers[i].position);
