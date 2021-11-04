@@ -97,7 +97,7 @@
         for (let j=0; j< markers.length; j++) {
           markers[j].addListener('click', function() {
             infowindows[j].open({map : map, anchor: markers[j], shouldFocus: false});      // was infowindows[i].open(map, markers[i]);infowindows[j].open(map, markers[j]);
-            infowindows[j].setZIndex(99);
+            infowindows[j].setZIndex(98);
             markers[j].setZIndex(99);
           } );
         } // for j loop
