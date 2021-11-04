@@ -169,12 +169,14 @@
           let myText = infowindows[i].content.toString().toLowerCase();
           let alwaysShow = markers[i].opacity;
           infowindows[i].close();
-
-          validity = true;
+          
+          valid = true;
+          /*
           for (let subword = 0; subword < myQueries.length; subword++) {
-            validity = myText.includes(myQueries[subword]);     // 'space' prevents searching mid-word
-            if (validity === false) { break; }
+            valid = myText.includes(myQueries[subword]);     // 'space' prevents searching mid-word
+            if (valid === false) { break; }
           }
+          */
           
           if (valid) {				                        // for markers where query is found
             markers[i].setMap(map);
@@ -204,10 +206,12 @@
             infowindows[i].close();
           }
         } // for
-        txtOut.value = myQueries; //"r:" + results + "w:" + myQueries.length;
+        txtOut.value = myQueries.length; //"r:" + results + "w:" + myQueries.length;
+        /*
         if ((myQuery.length >= 2) && (results == 0)) txtOut.value = "r:" + results + "w:" + myQueries.length; // "No Match";
         if ((myQuery.length < 2) && (results == 0)) txtOut.value = "";                    // "w:" + window.innerWidth;
         if ((myQuery.length < 2) && (results == 0)) newMapBounds = wholeMapBounds;
+        */
         map.fitBounds(newMapBounds, mapMarkerPadding);
       }
 
