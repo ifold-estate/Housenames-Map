@@ -67,12 +67,10 @@
           if (!FullArray[i].hide) {         // Exclude any data marked as HIDE
             let position = new google.maps.LatLng(FullArray[i].lat, FullArray[i].lng);
             let contentString =
-              '<div id="content" style="font-size: ' + (0.8 * 20) + 'px">' +
-              //'<h1 id="firstHeading" class="firstHeading">'+FullArray[i].label+'</h1>' +
+              '<div id="content">' +
                 '<div id="bodyContent" <style="font-size: ' + (0.8 * 20) + 'px">' +
-                  '<p><b>' + FullArray[i].label + '</b><br>' +
-                  '<style="font-size: ' + (0.5 * 20) + 'px">' + FullArray[i].road + ', ' + FullArray[i].postcode +
-                  '</p>' +
+                  '<p style="font-size: 20px"><b>' + FullArray[i].label + '</b><br></p>' +
+                  '<p style="font-size: 15px">   ' + FullArray[i].road  + ', ' + FullArray[i].postcode + '</p>' +
                 "</div>" +
               "</div>";
 
