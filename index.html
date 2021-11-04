@@ -69,8 +69,8 @@
             let contentString =
               '<div id="content">' +
                 '<div id="bodyContent"' +
-                  '<a style="font-size:' + (0.8 * scalex) + 'px; color:black;"><b>' + FullArray[i].label + '</b></a>' +
-                  '<a style="font-size:' + (0.4 * scalex) + 'px; color:blue; "><br>' + FullArray[i].road  + ', ' + FullArray[i].postcode + '</a>' +
+                  '<a style="font-size:' + (1.0 * scalex) + 'px; color:black;"><b>'  + FullArray[i].label + '</b></a>' +
+                  '<a style="font-size:' + (0.5 * scalex) + 'px; color:blue; "><br>' + FullArray[i].road  + ', ' + FullArray[i].postcode + '</a>' +
                 "</div>" +
               "</div>";
 
@@ -96,7 +96,7 @@
 
         for (let j=0; j< markers.length; j++) {
           markers[j].addListener('click', function() {
-            infowindows[j].open({map : map, anchor: markers[j], shouldFocus: false});      // was infowindows[i].open(map, markers[i]);infowindows[j].open(map, markers[j]);
+            infowindows[j].open({map : map, anchor: markers[j], shouldFocus: true});      // was infowindows[i].open(map, markers[i]);infowindows[j].open(map, markers[j]);
             infowindows[j].setZIndex(98);
             markers[j].setZIndex(99);
           } );
