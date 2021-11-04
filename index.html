@@ -163,7 +163,7 @@
         txtOut.value = '';
         var newMapBounds = new google.maps.LatLngBounds();
         
-        var myQueries = myQuery.split();                      // creates an array of words
+        var myQueries = myQuery.split(' ');                      // creates an array of words
           
         for (let i = 0; i < markers.length; i++) {			// Loop through all the markers
           let myText = infowindows[i].content.toString().toLowerCase();
