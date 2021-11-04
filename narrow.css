@@ -3,8 +3,8 @@
 
        #searchInput {
         position:         relative;
-        top:              -3px;
-        left:             10px;
+        top:              0px;
+        left:             0px;
         width:            400px;
         z-index:          9;
         background-color: transparent;
