@@ -557,8 +557,8 @@ FullArray[554] = { label: 'Shines 4', road: 'The Drive', postcode: 'RH14', lat: 
 FullArray[555] = { label: 'Santa Stop #1 @ 4:35pm', road: 'The Ride + Chalk Road', postcode: 'Opposite Pasadena', lat: 51.068954, lng: -0.541544, icon: 'Santa', show: 0, hide: 0 };
 FullArray[556] = { label: 'Santa Stop #2 @ 4:55pm', road: 'The Ride + The Drive', postcode: 'Woodland Copse', lat: 51.066520, lng: -0.534913, icon: 'Santa', show: 0, hide: 0 };
 FullArray[557] = { label: 'Santa Stop #3 @ 5:15pm', road: 'The Drive (South Pole)', postcode: 'Ifold Stores', lat: 51.06411, lng: -0.531368, icon: 'Santa', show: 0, hide: 0 };
-FullArray[558] = { label: 'Santa Stop #4 @ 5:35pm', road: 'The Close', postcode: 'Outside #4 Coromandel', lat: 51.069266, lng: -0.538087, icon: 'Santa', show: 0, hide: 0 };
-FullArray[559] = { label: 'Santa Stop #5 @ 5:55pm', road: 'The Drive (North Pole)', postcode: 'Blackthorn House', lat: 51.0729, lng: -0.535701, icon: 'Santa', show: 0, hide: 0 };
-FullArray[560] = { label: 'Santa Stop #6 @ 6:15pm', road: 'Hogwood Road', postcode: 'Beech House', lat: 51.073104, lng: -0.53862, icon: 'Santa', show: 0, hide: 0 };
+FullArray[558] = { label: 'Santa Stop #4 @ 5:35pm', road: 'The Close', postcode: 'Outside #5 Mistwood', lat: 51.069343, lng: -0.538376, icon: 'Santa', show: 0, hide: 0 };
+FullArray[559] = { label: 'Santa Stop #5 @ 5:55pm', road: 'The Drive (North Pole)', postcode: 'at Blackthorn House', lat: 51.0729, lng: -0.535701, icon: 'Santa', show: 0, hide: 0 };
+FullArray[560] = { label: 'Santa Stop #6 @ 6:15pm', road: 'Hogwood Road', postcode: 'at Beech House', lat: 51.073104, lng: -0.53862, icon: 'Santa', show: 0, hide: 0 };
 FullArray[561] = { label: 'Santa Stop #7 @ 6:35pm', road: 'Kelsey Hall', postcode: 'Wave Goodbye', lat: 51.070683, lng: -0.539152, icon: 'Santa', show: 0, hide: 0 };
 
