@@ -560,5 +560,5 @@ FullArray[557] = { label: 'Santa Stop #3 @ 5:15pm', road: 'The Drive (South Pole
 FullArray[558] = { label: 'Santa Stop #4 @ 5:35pm', road: 'The Close', postcode: 'Outside #5 Mistwood', lat: 51.069343, lng: -0.538376, icon: 'Santa', show: 0, hide: 0 };
 FullArray[559] = { label: 'Santa Stop #5 @ 5:55pm', road: 'The Drive (North Pole)', postcode: 'at Blackthorn House', lat: 51.0729, lng: -0.535701, icon: 'Santa', show: 0, hide: 0 };
 FullArray[560] = { label: 'Santa Stop #6 @ 6:15pm', road: 'Hogwood Road', postcode: 'at Beech House', lat: 51.073104, lng: -0.53862, icon: 'Santa', show: 0, hide: 0 };
-FullArray[561] = { label: 'Santa Stop #7 @ 6:35pm', road: 'Kelsey Hall', postcode: 'Wave Goodbye', lat: 51.070683, lng: -0.539152, icon: 'Santa', show: 0, hide: 0 };
+FullArray[561] = { label: 'Santa Stop #7 @ 6:35pm', road: 'Chalk Road', postcode: 'Wave Goodbye', lat: 51.070683, lng: -0.539152, icon: 'Santa', show: 0, hide: 0 };
 
