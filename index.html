@@ -1,226 +1,827 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Housenames Map</title>
-    <script
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA_2g8VWxksWUVyZq1DAks64Dls3tNhAeI&callback=initScript&libraries=&v=weekly"
-      defer
-      >
-    </script>
-    <link rel='stylesheet' media='screen and (min-width:    1px) and (max-width:  783px)' href='narrow.css' />
-    <link rel='stylesheet' media='screen and (min-width:  784px) and (max-width: 1176px)' href='medium.css' /> 
-    <link rel='stylesheet' media='screen and (min-width: 1177px) and (max-width: 3000px)' href='wide.css'   />
-  </head>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Ifold Underground</title>
+<style>
+@font-face{font-family:"Hammersmith One";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/hammersmith-one-latin-ext-400-normal.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Hammersmith One";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/hammersmith-one-latin-400-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+</style>
+<link rel="preload" href="fonts/hammersmith-one-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="description" content="Find any house on the Ifold Estate: which side of the road, and between which side roads.">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1120" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ifold Map">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+/* Digits: Hammersmith One's 1 and 0 look like I and O (bad for postcodes and house numbers), so take digits from a system sans */
+@font-face{font-family:"Ifold Digits";src:local("Helvetica Neue"),local("HelveticaNeue"),local("Arial"),local("ArialMT"),local("Roboto"),local("Segoe UI"),local("DejaVu Sans");unicode-range:U+0030-0039}
+/* Layout: one-screen app — search bar on top, tube map fills the rest, directions sheet docks at the bottom. */
+:root{
+  --bg:#ffffff; --fg:#14172a; --muted:#5d6278; --panel:#f3f4f8; --rule:#dfe1ea;
+  --ink:#0019a8;            /* station-name blue */
+  --roundel:#dc241f;
+  --track-black:#000000; --halo:#ffffff; --station-fill:#ffffff; --station-ring:#000000;
+  --hit:#dc241f; --left:#0019a8; --right:#b26300;
+  --font-display:"Ifold Digits","Hammersmith One","Gill Sans","Gill Sans MT",Calibri,"Trebuchet MS",sans-serif;
+  --font-ui:"Ifold Digits","Hammersmith One","Gill Sans","Gill Sans MT",Calibri,system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1120; --fg:#eef0f7; --muted:#9aa1bb; --panel:#171c30; --rule:#2a3049;
+  --ink:#b9c4ff; --track-black:#e6e7ee; --halo:#0d1120; --station-fill:#0d1120; --station-ring:#f4f5fa;
+  --hit:#ff5a52; --left:#9fb0ff; --right:#ffb35c; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0d1120; --fg:#eef0f7; --muted:#9aa1bb; --panel:#171c30; --rule:#2a3049;
+  --ink:#b9c4ff; --track-black:#e6e7ee; --halo:#0d1120; --station-fill:#0d1120; --station-ring:#f4f5fa;
+  --hit:#ff5a52; --left:#9fb0ff; --right:#ffb35c; color-scheme:dark }
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-ui);font-size:16px;overflow:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.app{height:100%;display:flex;flex-direction:column;position:relative}
+header{flex:none;padding-block:10px 8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));border-bottom:1px solid var(--rule);background:var(--bg);z-index:5;display:flex;flex-direction:column;gap:8px}
+.bar{display:flex;align-items:center;gap:10px;max-width:760px;width:100%;margin:0 auto}
+.roundel{flex:none;width:40px;height:40px}
+.search{flex:1;min-width:0;position:relative}
+.search input{width:100%;font:inherit;font-size:18px;padding:11px 40px 11px 14px;border:2px solid var(--fg);border-radius:999px;background:var(--bg);color:var(--fg);outline:none}
+.search input:focus-visible{border-color:var(--ink);box-shadow:0 0 0 3px color-mix(in srgb,var(--ink) 25%,transparent)}
+.search input::placeholder{color:var(--muted)}
+.search input::-webkit-search-cancel-button{-webkit-appearance:none;display:none}
+.clear{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:50%;border:0;background:transparent;color:var(--muted);font-size:22px;cursor:pointer;line-height:1}
+.clear:hover{background:var(--panel);color:var(--fg)}
+.meta{max-width:760px;width:100%;margin:0 auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px;color:var(--muted);min-height:24px}
+.chip{font:inherit;font-size:14px;border:1px solid var(--rule);background:var(--panel);color:var(--fg);border-radius:999px;padding:3px 10px;cursor:pointer}
+.chip:hover{border-color:var(--fg)}
+.count{font-variant-numeric:tabular-nums;color:var(--fg)}
+.results{max-width:760px;width:100%;margin:0 auto;max-height:min(38vh,320px);overflow:auto;border:1px solid var(--rule);border-radius:12px;background:var(--bg)}
+.results ol{list-style:none;margin:0;padding:4px 0}
+.results li button{all:unset;box-sizing:border-box;display:grid;grid-template-columns:14px 1fr auto;gap:10px;align-items:center;width:100%;padding:8px 12px;cursor:pointer}
+.results li button:hover,.results li button:focus-visible,.results li button.hot{background:var(--panel)}
+.results .sw{width:12px;height:12px;border-radius:50%;border:2px solid var(--bg);box-shadow:0 0 0 2px var(--sw)}
+.results .nm{display:block;font-size:17px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.results .sub{display:block;font-size:13px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.results .pc{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.more{padding:8px 12px;color:var(--muted);font-size:13px}
+.mapwrap{flex:1;min-height:0;position:relative;overflow:hidden;touch-action:none;background:var(--bg)}
+svg#map{width:100%;height:100%;display:block;cursor:grab;user-select:none;-webkit-user-select:none}
+svg#map.drag{cursor:grabbing}
+.zoom{position:absolute;right:max(12px,env(safe-area-inset-right,0px));top:12px;display:flex;flex-direction:column;gap:6px;z-index:3}
+.zoom button{width:40px;height:40px;border-radius:10px;border:1px solid var(--rule);background:var(--bg);color:var(--fg);font:inherit;font-size:20px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.zoom button:hover{border-color:var(--fg)}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:4;padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));padding-bottom:max(12px,env(safe-area-inset-bottom,0px));pointer-events:none}
+.card{pointer-events:auto;max-width:640px;margin:0 auto;background:var(--bg);border:2px solid var(--fg);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 8px 28px rgba(0,0,0,.18);max-height:52vh;overflow:auto}
+.card h2{margin:0;font-family:var(--font-display);font-weight:400;font-size:24px;line-height:1.1;color:var(--ink);text-wrap:balance}
+.card .where{font-size:15px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:14px;line-height:1.4}
+.dirs{display:grid;gap:8px}
+.dir{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:center;padding:8px 10px;border-radius:10px;background:var(--panel)}
+.side{grid-row:span 2;font-family:var(--font-display);font-size:22px;letter-spacing:.04em;width:92px;text-align:center;padding:8px 0;border-radius:8px;color:var(--bg)}
+.side.L{background:var(--left)} .side.R{background:var(--right)}
+.dir .head{font-size:14px;color:var(--muted)}
+.dir .body{font-size:16px;line-height:1.3}
+.dir .body b{font-weight:400;color:var(--ink)}
+.note{font-size:13px;color:var(--muted)}
+.closebtn{align-self:flex-end;margin-top:-6px;font:inherit;font-size:14px;border:0;background:none;color:var(--muted);cursor:pointer;text-decoration:underline}
+@media (max-width:520px){.card{padding:12px 12px;gap:8px;max-height:56%}.card h2{font-size:22px}.side{width:66px;font-size:16px;padding:6px 0}.dir{padding:7px 8px;gap:2px 10px}.dir .body{font-size:15px}.dir .head{font-size:13px}}
+.attrib{position:absolute;left:max(10px,env(safe-area-inset-left,0px));bottom:6px;font-size:11px;color:var(--muted);z-index:2;pointer-events:none}
+/* map styling */
+.lbl{font-family:var(--font-display);fill:var(--ink);paint-order:stroke;stroke:var(--halo);stroke-width:5px;stroke-linejoin:round}
+.road-tag{font-family:var(--font-display);font-size:15px}
+.dim .line,.dim .tick,.dim .lbl{opacity:.35}
+.hitdot{cursor:pointer}
+.hitdot:hover circle,.hitdot.hot circle{r:9}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
 
-  <body>
-    <div id="map">
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="bar">
+      <svg class="roundel" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="14" fill="none" stroke="var(--roundel)" stroke-width="7"/><rect x="1" y="16" width="38" height="8" fill="#0019a8"/></svg>
+      <form class="search" id="f" autocomplete="off" role="search">
+        <input id="q" type="search" inputmode="search" placeholder="House name, road or postcode" aria-label="Search Ifold addresses" enterkeyhint="search" spellcheck="false" autocapitalize="off">
+        <button type="button" class="clear" id="clr" aria-label="Clear search" hidden>×</button>
+      </form>
     </div>
+    <div class="meta" id="meta"></div>
+    <div class="results" id="res" hidden></div>
+  </header>
+  <div class="mapwrap" id="wrap">
+    <svg id="map" xmlns="http://www.w3.org/2000/svg" aria-label="Ifold Estate road map in the style of the London Underground"></svg>
+    <div class="zoom"><button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">−</button><button id="zfit" aria-label="Show whole map" style="font-size:15px">⤢</button></div>
+    <div class="attrib">Road geometry © OpenStreetMap contributors</div>
+    <div class="sheet" id="sheet" hidden><div class="card" id="card"></div></div>
+  </div>
+</div>
 
-    <script> var FullArray = []; </script>
-    <script src="data.js"></script>
-    <script>
+<script>var FullArray = [];</script>
+<script src="data.js"></script>
+<script>
+// Road centrelines from OpenStreetMap (© OpenStreetMap contributors, ODbL), as [lat, lng].
+// Main roads are ordered in their "canonical" driving direction.
+const GEO_ROADS = {
+  lane: [[51.07786,-0.544174],[51.077717,-0.543991],[51.076259,-0.54245],[51.075494,-0.541586],[51.075463,-0.541479],[51.075512,-0.541288],[51.075666,-0.540768],[51.076015,-0.539511],[51.076052,-0.53917],[51.076053,-0.539127],[51.076022,-0.539034],[51.075975,-0.538964],[51.075829,-0.53886],[51.075674,-0.538784],[51.075517,-0.538696],[51.075213,-0.538491],[51.075084,-0.538403],[51.073539,-0.537948],[51.073474,-0.537935],[51.073167,-0.537848],[51.072625,-0.537771],[51.072498,-0.537726],[51.072438,-0.537629]],
+  ibl: [[51.075829,-0.53886],[51.076793,-0.537896],[51.077611,-0.537096],[51.077856,-0.536838],[51.077908,-0.536658],[51.077879,-0.53636],[51.077659,-0.534852],[51.077534,-0.534187],[51.077496,-0.533776],[51.077538,-0.533629],[51.077602,-0.533556],[51.077672,-0.533328],[51.077706,-0.533082],[51.077693,-0.532749],[51.077595,-0.532547]],
+  hogwood: [[51.073167,-0.537848],[51.072939,-0.54019],[51.072902,-0.540594],[51.072891,-0.540702],[51.072813,-0.541436]],
+  chalk: [[51.072438,-0.537629],[51.072393,-0.53745],[51.071959,-0.537428],[51.071797,-0.53742],[51.071668,-0.53747],[51.071586,-0.537502],[51.071267,-0.537843],[51.071088,-0.538203],[51.071053,-0.538288],[51.07067,-0.539113],[51.070606,-0.539235],[51.070308,-0.539832],[51.070077,-0.540293],[51.070039,-0.540366],[51.069943,-0.540562],[51.069895,-0.540658],[51.069719,-0.541008],[51.069072,-0.541878],[51.068717,-0.542377],[51.068514,-0.542782],[51.06814,-0.54398]],
+  drive: [[51.072393,-0.53745],[51.072409,-0.537238],[51.072533,-0.536917],[51.072774,-0.536538],[51.072911,-0.536181],[51.072987,-0.535982],[51.073012,-0.53583],[51.072919,-0.535736],[51.072853,-0.53571],[51.072783,-0.535682],[51.072707,-0.535652],[51.072456,-0.535572],[51.072215,-0.535474],[51.071715,-0.535372],[51.071502,-0.53535],[51.071125,-0.53531],[51.070901,-0.535287],[51.07064,-0.535294],[51.070571,-0.535296],[51.07021,-0.535373],[51.070177,-0.53538],[51.069901,-0.53544],[51.069486,-0.535563],[51.069268,-0.535641],[51.069166,-0.535667],[51.068926,-0.53572],[51.068433,-0.535742],[51.068019,-0.535677],[51.067818,-0.535618],[51.067645,-0.535567],[51.067338,-0.535421],[51.066646,-0.535049],[51.066526,-0.534961],[51.066476,-0.534915],[51.066255,-0.534713],[51.065874,-0.534298],[51.065766,-0.53418],[51.065277,-0.533595],[51.065145,-0.533397],[51.064884,-0.532956],[51.064766,-0.532737],[51.064622,-0.532475],[51.064581,-0.53238],[51.064365,-0.531786],[51.064208,-0.531375],[51.064054,-0.530882]],
+  ride: [[51.069941,-0.547003],[51.069979,-0.546864],[51.070076,-0.546038],[51.069936,-0.544661],[51.069875,-0.544113],[51.069732,-0.54371],[51.069505,-0.543067],[51.069072,-0.541878],[51.068729,-0.540885],[51.066882,-0.53578],[51.066646,-0.535049]],
+  close: [[51.069166,-0.535667],[51.069226,-0.537087],[51.069241,-0.537648],[51.069256,-0.537891],[51.069346,-0.538352],[51.069403,-0.538753],[51.069452,-0.539146]],
+  wychwood: [[51.069346,-0.538352],[51.069818,-0.538028],[51.070233,-0.537663]],
+  // Loxwood Road (west) runs into Plaistow Road (east) – one line on the map, two names
+  loxwood: [[51.068881,-0.558323],[51.069001,-0.55731],[51.068999,-0.556674],[51.068929,-0.555758],[51.068735,-0.554534],[51.068616,-0.553786],[51.068551,-0.552895],[51.06865,-0.551928],[51.068769,-0.551494],[51.069248,-0.550234],[51.069562,-0.549376],[51.069709,-0.548798],[51.069915,-0.547992],[51.069935,-0.547685],[51.069961,-0.547288],[51.069941,-0.547003],[51.069226,-0.546444],[51.068984,-0.546084],[51.06841,-0.544381]],
+  plaistow: [[51.06841,-0.544381],[51.06814,-0.54398],[51.067936,-0.543822],[51.067696,-0.543525],[51.067168,-0.542564],[51.067025,-0.542321],[51.066661,-0.541907],[51.066445,-0.541396],[51.065601,-0.539407],[51.065164,-0.538606],[51.065093,-0.538424],[51.065055,-0.538203],[51.065033,-0.537393],[51.06502,-0.536929],[51.064895,-0.536309],[51.064822,-0.536033],[51.064777,-0.535891],[51.064639,-0.535548],[51.064398,-0.534907],[51.06429,-0.534615],[51.06405,-0.533938],[51.063898,-0.533402],[51.063859,-0.533101],[51.063876,-0.53225],[51.06398,-0.531341],[51.064054,-0.530882],[51.064297,-0.529358],[51.064413,-0.528447],[51.064504,-0.527731]],
+  poundfield: [[51.069941,-0.547003],[51.070268,-0.546805],[51.07052,-0.546719],[51.070604,-0.546842],[51.071203,-0.547623],[51.072226,-0.5478],[51.073127,-0.547715],[51.073358,-0.547664],[51.074582,-0.547428],[51.074665,-0.547272],[51.075251,-0.547042],[51.075299,-0.546904],[51.075468,-0.546568]],
+  forestry: [[51.069915,-0.547992],[51.070179,-0.548037],[51.070596,-0.54771],[51.071194,-0.547767],[51.07204,-0.547935],[51.072479,-0.547955],[51.073264,-0.547824],[51.074474,-0.547577],[51.075299,-0.547442],[51.075553,-0.547333],[51.075855,-0.546922],[51.076152,-0.546623],[51.076545,-0.546225],[51.076942,-0.54581],[51.07726,-0.545586],[51.077542,-0.54532],[51.077763,-0.544956],[51.078082,-0.544974],[51.078662,-0.545196],[51.078978,-0.545235],[51.079509,-0.545137],[51.079715,-0.545216],[51.080103,-0.545784]],
+};
 
-      var map;
-      var wholeMapBounds;
-      var mapMarkerPadding = {left:10, right: 10, top: 25, bottom: 0};
+// Side roads, closes and private drives: first point is where they leave the parent road.
+// name '' = unnamed private drive (named from sign posts in data.js where one stands at the mouth).
+const GEO_SPURS = [
+  // off The Drive
+  {p:'drive', n:'Thistledown Vale', g:[[51.073012,-0.53583],[51.073203,-0.535713],[51.073347,-0.535679],[51.073567,-0.535687],[51.073741,-0.535729],[51.074008,-0.535874],[51.074088,-0.535874]]},
+  {p:'drive', n:'', g:[[51.072853,-0.53571],[51.072937,-0.535605],[51.073043,-0.535474],[51.073179,-0.535311],[51.07334,-0.535101]]},
+  {p:'drive', n:'', g:[[51.072919,-0.535736],[51.073133,-0.535458],[51.073324,-0.535408],[51.073526,-0.535386]]},
+  {p:'drive', n:'', g:[[51.072783,-0.535682],[51.073109,-0.535273],[51.073317,-0.534962],[51.073425,-0.534741],[51.073487,-0.534368]]},
+  {p:'drive', n:'', g:[[51.072911,-0.536181],[51.072976,-0.536238],[51.07341,-0.536447]]},
+  {p:'drive', n:'Loxmeadow Close', g:[[51.072456,-0.535572],[51.072553,-0.53531],[51.072647,-0.534755],[51.072651,-0.534549],[51.072729,-0.53422]]},
+  {p:'drive', n:'Oakdene Place', g:[[51.072215,-0.535474],[51.072471,-0.533957],[51.07241,-0.533929]]},
+  {p:'drive', n:'', g:[[51.071502,-0.53535],[51.071866,-0.534168],[51.071854,-0.53407],[51.071737,-0.533981],[51.071728,-0.533752],[51.071766,-0.533524]]},
+  {p:'drive', n:'', g:[[51.071125,-0.53531],[51.071152,-0.534305],[51.071187,-0.534163],[51.071195,-0.53408],[51.0711,-0.533984]]},
+  {p:'drive', n:'', g:[[51.070571,-0.535296],[51.070505,-0.533859],[51.070563,-0.533848]]},
+  {p:'drive', n:'', g:[[51.070177,-0.53538],[51.070169,-0.535212],[51.070154,-0.53497],[51.070142,-0.534706],[51.070131,-0.534497],[51.070088,-0.534374]]},
+  {p:'drive', n:'', g:[[51.07021,-0.535373],[51.07021,-0.535181],[51.070194,-0.534878],[51.070185,-0.534697],[51.070163,-0.534362]]},
+  {p:'drive', n:'Springfields Close', g:[[51.069901,-0.53544],[51.069838,-0.534898],[51.069778,-0.534244],[51.069748,-0.534035],[51.069707,-0.533883],[51.069575,-0.533858]]},
+  {p:'drive', n:'Wildacre Close', g:[[51.069486,-0.535563],[51.069573,-0.536191],[51.06993,-0.537],[51.070083,-0.536999]]},
+  {p:'drive', n:'Birchwood Close', g:[[51.069268,-0.535641],[51.069203,-0.535236],[51.069146,-0.534806],[51.069153,-0.534401],[51.069131,-0.534163],[51.069073,-0.533699]]},
+  {p:'drive', n:'Oak Way', g:[[51.068433,-0.535742],[51.068411,-0.536011],[51.068378,-0.536495],[51.068368,-0.536824],[51.068373,-0.537063],[51.068404,-0.537396],[51.068465,-0.537656],[51.068377,-0.537741]]},
+  {p:'drive', n:'', g:[[51.068433,-0.535742],[51.06844,-0.535518],[51.068442,-0.535095],[51.06845,-0.534592],[51.068451,-0.534292],[51.068394,-0.534093],[51.068301,-0.5342]]},
+  {p:'drive', n:'', g:[[51.067818,-0.535618],[51.067921,-0.534876],[51.068009,-0.534328]]},
+  {p:'drive', n:'', g:[[51.067338,-0.535421],[51.067684,-0.533918],[51.067778,-0.533937]]},
+  {p:'drive', n:'Woodland Copse', g:[[51.066526,-0.534961],[51.066749,-0.534082],[51.06674,-0.533921],[51.066823,-0.533639],[51.066917,-0.533443]]},
+  {p:'drive', n:'Simmons Place', g:[[51.065766,-0.53418],[51.066166,-0.53336],[51.066323,-0.533184],[51.066382,-0.533138]]},
+  {p:'drive', n:'', g:[[51.065145,-0.533397],[51.065335,-0.533119],[51.065581,-0.532775],[51.065737,-0.532649],[51.065854,-0.532575],[51.066013,-0.532373]]},
+  {p:'drive', n:'', g:[[51.064884,-0.532956],[51.065174,-0.532613]]},
+  {p:'drive', n:'', g:[[51.064766,-0.532737],[51.065053,-0.532366],[51.065231,-0.53222],[51.065408,-0.532132]]},
+  {p:'drive', n:'', g:[[51.064622,-0.532475],[51.065141,-0.531824]]},
+  {p:'drive', n:'', g:[[51.064365,-0.531786],[51.064483,-0.531635]]},
+  {p:'ride', n:'Chequer Close', g:[[51.066882,-0.53578],[51.06705,-0.53572],[51.06712,-0.53558]]},
+  // off The Close
+  // off Chalk Road
+  {p:'chalk', n:'Sycamore Close', g:[[51.071959,-0.537428],[51.071961,-0.538371],[51.071963,-0.538548],[51.071976,-0.538596],[51.072156,-0.539019]]},
+  {p:'chalk', n:'', g:[[51.071088,-0.538203],[51.070955,-0.538063],[51.070688,-0.537764]]},
+  {p:'chalk', n:'Kelsey Hall', g:[[51.07067,-0.539113],[51.071033,-0.539532]]},
+  {p:'chalk', n:'', g:[[51.070606,-0.539235],[51.070768,-0.539431],[51.070995,-0.539671],[51.071105,-0.539832],[51.071114,-0.539953],[51.071218,-0.540046],[51.071399,-0.540196]]},
+  {p:'chalk', n:'', g:[[51.070308,-0.539832],[51.070417,-0.539962],[51.070691,-0.54027],[51.070959,-0.540565]]},
+  {p:'chalk', n:'', g:[[51.070077,-0.540293],[51.070255,-0.540511],[51.070462,-0.540744],[51.070665,-0.540968]]},
+  {p:'chalk', n:'', g:[[51.070039,-0.540366],[51.069848,-0.540176],[51.069654,-0.539984],[51.069596,-0.539921]]},
+  {p:'chalk', n:'', g:[[51.069943,-0.540562],[51.070067,-0.540776],[51.070207,-0.540959],[51.070679,-0.54146]]},
+  {p:'chalk', n:'', g:[[51.069895,-0.540658],[51.069973,-0.540786],[51.070044,-0.540952],[51.070181,-0.541311],[51.070273,-0.541562],[51.070378,-0.54179],[51.070517,-0.541892],[51.070571,-0.54186]]},
+  // off The Ride
+  {p:'ride', n:'Mill House', g:[[51.068729,-0.540885],[51.068328,-0.541213],[51.068308,-0.541278],[51.068323,-0.541364]]},
+  {p:'ride', n:'', g:[[51.069505,-0.543067],[51.06963,-0.542942],[51.069809,-0.542792],[51.069945,-0.542659],[51.070072,-0.542513],[51.0702,-0.542308],[51.070243,-0.542222]]},
+  {p:'ride', n:'', g:[[51.069732,-0.54371],[51.070048,-0.543412],[51.070376,-0.543101],[51.070516,-0.542908]]},
+  {p:'ride', n:'', g:[[51.069875,-0.544113],[51.070015,-0.543992],[51.070202,-0.543877],[51.070496,-0.543695]]},
+  {p:'ride', n:'', g:[[51.069936,-0.544661],[51.070495,-0.544495]]},
+  // off Hogwood Road
+  {p:'hogwood', n:'Pannells Ash', g:[[51.072902,-0.540594],[51.072221,-0.540434],[51.071913,-0.5406]]},
+  {p:'hogwood', n:'', g:[[51.072939,-0.54019],[51.072288,-0.540055],[51.072184,-0.540043]]},
+  {p:'hogwood', n:'', g:[[51.072891,-0.540702],[51.073022,-0.540714],[51.073143,-0.540622],[51.073247,-0.540631],[51.073313,-0.540803]]},
+  {p:'hogwood', n:'', g:[[51.072813,-0.541436],[51.073097,-0.541864],[51.073156,-0.541968]]},
+  // off The Lane
+  {p:'lane', n:'The Olde Garden', g:[[51.073539,-0.537948],[51.073564,-0.537275]]},
+  {p:'lane', n:'', g:[[51.075213,-0.538491],[51.075201,-0.538905],[51.075223,-0.53913],[51.075296,-0.539193],[51.075406,-0.539162],[51.075514,-0.539068]]},
+  {p:'lane', n:'', g:[[51.075517,-0.538696],[51.075744,-0.538106],[51.076031,-0.537525],[51.076345,-0.536978],[51.076437,-0.536829]]},
+  {p:'lane', n:'', g:[[51.076022,-0.539034],[51.076312,-0.53904],[51.076543,-0.538958],[51.077388,-0.538645],[51.077493,-0.538728],[51.078313,-0.539803],[51.079007,-0.540178],[51.079311,-0.538955]]},
+  // off Ifold Bridge Lane
+  {p:'ibl', n:'', g:[[51.076793,-0.537896],[51.07654,-0.537338],[51.076345,-0.536978]]},
+  {p:'ibl', n:'', g:[[51.077871,-0.536304],[51.078088,-0.536199],[51.078222,-0.536079],[51.078331,-0.535955],[51.078408,-0.535806],[51.078429,-0.5356]]},
+  // off Plaistow Road
+  {p:'main', n:'', g:[[51.06814,-0.54398],[51.068029,-0.544209],[51.06789,-0.544527],[51.067731,-0.544874],[51.067511,-0.545402],[51.067333,-0.545776],[51.067141,-0.546234],[51.067122,-0.546466],[51.067167,-0.546712],[51.067298,-0.547232],[51.067419,-0.547677],[51.067646,-0.548471]]},
+  {p:'main', n:'', g:[[51.067168,-0.542564],[51.067112,-0.542808],[51.067086,-0.542986],[51.067104,-0.54342],[51.067103,-0.54392],[51.067043,-0.544089]]},
+  {p:'main', n:'Foxbridge Lane', g:[[51.066661,-0.541907],[51.066634,-0.541912],[51.065343,-0.542305],[51.06487,-0.542344]]},
+  {p:'main', n:'Ifoldhurst', g:[[51.065601,-0.539407],[51.06593,-0.53894],[51.066005,-0.53875],[51.066077,-0.538534],[51.066151,-0.538442],[51.066457,-0.538194],[51.066608,-0.538554],[51.06676,-0.539087],[51.066981,-0.539494],[51.067521,-0.540973]]},
+  {p:'main', n:'', g:[[51.066457,-0.538194],[51.066015,-0.536939]], via:'Ifoldhurst'},
+  {p:'main', n:'Sylvania Copse', g:[[51.064895,-0.536309],[51.065004,-0.536217],[51.065125,-0.536119],[51.065304,-0.535963],[51.065394,-0.535929],[51.065631,-0.535924],[51.06565,-0.535849]]},
+  {p:'main', n:'', g:[[51.064798,-0.535944],[51.064893,-0.535865],[51.065237,-0.535482],[51.06545,-0.535269]]},
+  {p:'main', n:'', g:[[51.064777,-0.535891],[51.06487,-0.535798],[51.064971,-0.535689],[51.065227,-0.535388],[51.065246,-0.535223]]},
+  {p:'main', n:'', g:[[51.064639,-0.535548],[51.064388,-0.535713],[51.063639,-0.536206],[51.063583,-0.53624]]},
+  {p:'main', n:'', g:[[51.06429,-0.534615],[51.064017,-0.534704],[51.06395,-0.534747],[51.063927,-0.534878],[51.063988,-0.535247]]},
+  {p:'main', n:'', g:[[51.064398,-0.534907],[51.064446,-0.534856],[51.064766,-0.534495],[51.064852,-0.534432],[51.06494,-0.534629]]},
+  // off Loxwood Road
+  {p:'main', n:'', g:[[51.068769,-0.551494],[51.068261,-0.551012],[51.06812,-0.550976],[51.067344,-0.550139],[51.066131,-0.548047]]},
+  {p:'main', n:'', g:[[51.069709,-0.548798],[51.069886,-0.548848],[51.070006,-0.548783],[51.070102,-0.548657],[51.070149,-0.548459],[51.070179,-0.548037]]},
+  // off Poundfield Lane
+  {p:'poundfield', n:'', g:[[51.073358,-0.547664],[51.073433,-0.547466],[51.073466,-0.547225],[51.073437,-0.547076],[51.073241,-0.547141]]},
+  {p:'poundfield', n:'', g:[[51.074665,-0.547272],[51.074487,-0.545633]]},
+];
 
-      var markers = [];
-      var infowindows = [];
+</script>
+<script>
+(function () {
+'use strict';
+const NS = 'http://www.w3.org/2000/svg';
 
-      function initScript() {
-        initMap();
-        checkURL();
-        search();
-      }
+/* ---------- geometry helpers (local metres, y = north) ---------- */
+const LAT0 = 51.07, LNG0 = -0.54, KX = Math.cos(LAT0 * Math.PI / 180) * 111320, KY = 110574;
+const xy = g => [(g[1] - LNG0) * KX, (g[0] - LAT0) * KY];
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function mkPoly(pts) {
+  const c = [0];
+  for (let i = 1; i < pts.length; i++) c.push(c[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  return { pts, c, L: c[c.length - 1] };
+}
+function project(pl, P) {
+  let best = null;
+  const p = pl.pts;
+  for (let i = 0; i < p.length - 1; i++) {
+    const ax = p[i][0], ay = p[i][1], vx = p[i + 1][0] - ax, vy = p[i + 1][1] - ay;
+    const l2 = vx * vx + vy * vy || 1e-9;
+    const t = clamp(((P[0] - ax) * vx + (P[1] - ay) * vy) / l2, 0, 1);
+    const fx = ax + t * vx, fy = ay + t * vy, d = Math.hypot(P[0] - fx, P[1] - fy);
+    if (!best || d < best.d) best = { d, s: pl.c[i] + t * Math.sqrt(l2), cross: vx * (P[1] - ay) - vy * (P[0] - ax), i };
+  }
+  return best;
+}
+function at(pl, s) {
+  s = clamp(s, 0, pl.L);
+  const c = pl.c, p = pl.pts;
+  let lo = 0, hi = c.length - 1;
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (c[m] <= s) lo = m; else hi = m; }
+  const seg = c[hi] - c[lo] || 1e-9, t = (s - c[lo]) / seg;
+  const dx = (p[hi][0] - p[lo][0]) / seg, dy = (p[hi][1] - p[lo][1]) / seg;
+  return { x: p[lo][0] + t * (p[hi][0] - p[lo][0]), y: p[lo][1] + t * (p[hi][1] - p[lo][1]), dx, dy };
+}
+function slice(pl, s0, s1) {
+  if (s0 > s1) [s0, s1] = [s1, s0];
+  const out = [at(pl, s0)].map(q => [q.x, q.y]);
+  for (let i = 0; i < pl.pts.length; i++) if (pl.c[i] > s0 && pl.c[i] < s1) out.push(pl.pts[i]);
+  const e = at(pl, s1); out.push([e.x, e.y]);
+  return out;
+}
+/* rounded-corner polyline, densely sampled, so drawing and measuring use the same curve */
+function rounded(pts, r, closed) {
+  const n = pts.length, out = [];
+  const P = i => pts[(i + n) % n];
+  const first = closed ? 0 : 1, last = closed ? n - 1 : n - 2;
+  if (!closed) out.push(pts[0]);
+  for (let i = first; i <= last; i++) {
+    const A = P(i - 1), B = P(i), C = P(i + 1);
+    const l1 = Math.hypot(B[0] - A[0], B[1] - A[1]), l2 = Math.hypot(C[0] - B[0], C[1] - B[1]);
+    const f1 = (!closed && i === 1) ? 1 : 0.5, f2 = (!closed && i === n - 2) ? 1 : 0.5;
+    const rr = Math.min(Array.isArray(r) ? r[(i + n) % n] : r, l1 * f1, l2 * f2);
+    const a = [B[0] - (B[0] - A[0]) / l1 * rr, B[1] - (B[1] - A[1]) / l1 * rr];
+    const b = [B[0] + (C[0] - B[0]) / l2 * rr, B[1] + (C[1] - B[1]) / l2 * rr];
+    for (let k = 0; k <= 10; k++) {
+      const t = k / 10, u = 1 - t;
+      out.push([u * u * a[0] + 2 * u * t * B[0] + t * t * b[0], u * u * a[1] + 2 * u * t * B[1] + t * t * b[1]]);
+    }
+  }
+  if (closed) out.push(out[0]); else out.push(pts[n - 1]);
+  return out;
+}
+const dstr = pts => 'M' + pts.map(p => p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('L');
 
-      function initMap() {
-        var myStyles =[
-          {
-            featureType: "poi",
-            elementType: "labels",
-            stylers: [
-              { visibility: "off" }
-            ]
-          }
-        ];
+/* ---------- the map: roads drawn as tube lines ---------- */
+const rev = a => a.slice().reverse();
+const MAIN_GEO = GEO_ROADS.loxwood.concat(GEO_ROADS.plaistow.slice(1));
+const ROADS = {
+  drive: { name: 'The Drive', col: '#F3A9BB', tagInk: '#14172a', geo: rev(GEO_ROADS.drive), r: 36,
+    sch: [[751, 1220], [751, 447], [609, 447]],
+    anchors: [['Simmons Place', [751, 1076]], ['Woodland Copse', [751, 1030]], [[51.066646, -0.535049], [751, 993]], ['Oak Way', [751, 897]],
+      [[51.069166, -0.535667], [751, 858]], ['Birchwood Close', [751, 817]], ['Wildacre Close', [751, 773]], ['Springfields Close', [751, 732]],
+      ['Hawthorn Close', [751, 630]], ['Oakdene Place', [751, 538]], ['Loxmeadow Close', [751, 492]], ['Thistledown Vale', [742, 456]]],
+    dirs: ['Heading north from Plaistow Road (Ifold Stores end)', 'Heading south from Chalk Road'],
+    tag: { x: 751, y: 1160, rot: -90 } },
+  chalk: { name: 'Chalk Road', col: '#9B0056', tagInk: '#fff', geo: rev(GEO_ROADS.chalk), r: 40,
+    sch: [[330, 848], [603, 575], [603, 453]],
+    anchors: [[[51.069072, -0.541878], [468, 710]], ['Kelsey Hall', [556, 622]], ['Sycamore Close', [603, 516]]],
+    dirs: ['Heading north-east from Plaistow Road', 'Heading south-west from The Drive'],
+    tag: { x: 512, y: 666, rot: -45 } },
+  ride: { name: 'The Ride', col: '#00782A', tagInk: '#fff', geo: GEO_ROADS.ride, r: 40,
+    sch: [[250, 600], [358, 600], [751, 993]],
+    anchors: [[[51.069072, -0.541878], [468, 710]], ['Mill House', [500, 742]], ['Chequer Close', [712, 954]]],
+    dirs: ['Heading east from Loxwood Road', 'Heading west from The Drive'],
+    tag: { x: 420, y: 662, rot: 45 } },
+  lane: { name: 'The Lane', col: 'var(--track-black)', tagInk: 'var(--bg)', geo: rev(GEO_ROADS.lane), r: 18,
+    sch: [[606, 453], [580, 453], [555, 428], [555, 248], [310, 248], [310, 175]],
+    anchors: [[[51.073167, -0.537848], [555, 398]], [[51.075829, -0.53886], [555, 308]], [[51.076053, -0.539127], [555, 248]], [[51.075463, -0.541479], [310, 248]]],
+    dirs: ['Heading north from Chalk Road', 'Heading south towards Chalk Road'],
+    bends: [[[51.076053, -0.539127], 'the bend by Lakeside'], [[51.075463, -0.541479], 'the sharp corner']],
+    tag: { x: 432, y: 248, rot: 0 } },
+  ibl: { name: 'Ifold Bridge Lane', col: '#B36305', tagInk: '#fff', geo: GEO_ROADS.ibl, r: 30,
+    sch: [[555, 308], [640, 223], [700, 223], [775, 298]], anchors: [],
+    dirs: ['Heading east from The Lane', 'Heading west towards The Lane'],
+    tag: { x: 790, y: 320, rot: 0, anchor: 'start' } },
+  hogwood: { name: 'Hogwood Road', col: '#0098D4', tagInk: '#fff', geo: GEO_ROADS.hogwood, r: 0,
+    sch: [[555, 398], [285, 398]], anchors: [['Pannells Ash', [440, 398]]],
+    dirs: ['Heading west from The Lane', 'Heading east towards The Lane'],
+    tag: { x: 357, y: 398, rot: 0 } },
+  close: { name: 'The Close', col: 'var(--track-black)', tagInk: 'var(--bg)', geo: GEO_ROADS.close, r: 0, pill: true,
+    sch: [[751, 858], [686, 858]], anchors: [[[51.069346, -0.538352], [693, 858]]],
+    dirs: ['Heading west, in from The Drive', 'Heading east, back towards The Drive'],
+    tag: { x: 768, y: 858, rot: 0, anchor: 'start' } },
+  wych: { name: 'Wychwood', col: '#6BC4AE', tagInk: '#14172a', geo: GEO_ROADS.wychwood, r: 20, dbl: true,
+    sch: [[693, 858], [668, 833], [668, 740]], anchors: [],
+    dirs: ['Heading north, in from The Close', 'Heading south, back to The Close'],
+    tag: { x: 668, y: 718, rot: 0 } },
+  main: { name: 'Plaistow Road', col: '#DC241F', tagInk: '#fff', geo: MAIN_GEO, r: 36,
+    sch: [[80, 600], [250, 600], [250, 768], [702, 1220], [900, 1220]],
+    anchors: [[[51.069915, -0.547992], [175, 600]], [[51.069941, -0.547003], [250, 600]], [[51.06814, -0.54398], [330, 848]], [[51.064054, -0.530882], [751, 1220]]],
+    sections: [[51.06841, -0.544381], 'Loxwood Road', 'Plaistow Road'],
+    dirs: ['Heading east (from Loxwood towards Plaistow)', 'Heading west (from Plaistow towards Loxwood)'],
+    tag: { x: 636, y: 1154, rot: 45 }, tag2: { x: 250, y: 690, rot: -90, text: 'Loxwood Road' } },
+  poundfield: { name: 'Poundfield Lane', col: '#7156A5', tagInk: '#fff', geo: GEO_ROADS.poundfield, r: 0,
+    sch: [[250, 600], [250, 330]], anchors: [],
+    dirs: ['Heading north from Loxwood Road', 'Heading south towards Loxwood Road'],
+    tag: { x: 250, y: 462, rot: -90 } },
+  forestry: { name: 'Forestry Road', col: '#A0A5A9', tagInk: '#14172a', geo: GEO_ROADS.forestry, r: 40,
+    sch: [[175, 600], [175, 310], [310, 175], [310, 115]], anchors: [[[51.077763, -0.544956], [310, 175]]],
+    dirs: ['Heading north from Loxwood Road (Hogwood Farm drive)', 'Heading south towards Loxwood Road'],
+    tag: { x: 175, y: 455, rot: -90 } },
+};
+const PARENT = { close: 'drive', wych: 'close' };
+const JUNCTIONS = [
+  ['drive', 'chalk', [51.072393, -0.53745]], ['drive', 'lane', [51.072393, -0.53745]], ['drive', 'ride', [51.066646, -0.535049]],
+  ['drive', 'close', [51.069166, -0.535667]], ['drive', 'main', [51.064054, -0.530882]], ['chalk', 'main', [51.06814, -0.54398]],
+  ['chalk', 'ride', [51.069072, -0.541878]], ['chalk', 'lane', [51.072438, -0.537629]], ['lane', 'hogwood', [51.073167, -0.537848]],
+  ['lane', 'ibl', [51.075829, -0.53886]], ['lane', 'forestry', [51.077763, -0.544956]], ['ride', 'main', [51.069941, -0.547003]],
+  ['main', 'poundfield', [51.069941, -0.547003]], ['main', 'forestry', [51.069915, -0.547992]], ['close', 'wych', [51.069346, -0.538352]],
+];
+const INTERCHANGES = [[606, 453], [555, 398], [555, 308], [468, 710], [751, 993], [330, 848], [751, 1220], [250, 600], [175, 600], [310, 175]];
+const LABEL_AT = {
+  'Thistledown Vale': [776, 449, 'start'], 'Loxmeadow Close': [776, 494, 'start'], 'Oakdene Place': [776, 540, 'start'],
+  'Hawthorn Close': [776, 632, 'start'], 'Springfields Close': [776, 734, 'start'], 'Wildacre Close': [776, 775, 'start'],
+  'Birchwood Close': [776, 819, 'start'], 'Oak Way': [776, 899, 'start'], 'Woodland Copse': [776, 1032, 'start'],
+  'Simmons Place': [776, 1078, 'start'], 'Chequer Close': [690, 970, 'end'], 'Mill House': [410, 786, 'start'],
+  'Kelsey Hall': [536, 600, 'end'], 'Sycamore Close': [578, 518, 'end'], 'Pannells Ash': [440, 446, 'middle'],
+};
 
-        map = new google.maps.Map(document.getElementById("map"), {
-          styles: myStyles,
-          zoomControl: true,
-          gestureHandling: "cooperative",
-          mapTypeId: "hybrid",
-          mapTypeControl: true,
-          mapTypeControlOptions: {
-            style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
-            position: google.maps.ControlPosition.BOTTOM_LEFT,
-          },
-          scaleControl: true,
-          streetViewControl: false,
-          rotateControl: false,
-          fullscreenControl: false
-        });
-      
-        wholeMapBounds = new google.maps.LatLngBounds();
-        let scalex = parseFloat(window.getComputedStyle(document.getElementById('txtResult'), null).getPropertyValue('font-size'));
-        
-        for (let i = 0; i < FullArray.length; i++) {
-          if (!FullArray[i].hide) {         // Exclude any data marked as HIDE
-            let position = new google.maps.LatLng(FullArray[i].lat, FullArray[i].lng);
-            let contentString =
-              '<div id="content">' +
-                '<div id="bodyContent"' +
-                  '<a style="font-size:' + (1.0 * scalex) + 'px; color:black;"><b>'  + FullArray[i].label + '</b></a>' +
-                  '<a style="font-size:' + (0.5 * scalex) + 'px; color:blue; "><br>' + FullArray[i].road  + ', ' + FullArray[i].postcode + '</a>' +
-                "</div>" +
-              "</div>";
+/* build road geometry */
+for (const k in ROADS) {
+  const R = ROADS[k];
+  R.key = k;
+  R.g = mkPoly(R.geo.map(xy));
+  R.s = mkPoly(R.r ? rounded(R.sch, R.r, false) : R.sch);
+  if (R.sections) R.secS = project(R.g, xy(R.sections[0])).s;
+}
+const roadName = (R, s) => R.sections ? (s < R.secS ? R.sections[1] : R.sections[2]) : R.name;
 
-            markers.push(
-              new google.maps.Marker({
-                position: position ,
-                icon: {url:selectIcon(FullArray[i].icon), scaledSize: new google.maps.Size(40, 40)} ,
-                opacity: 1 - (FullArray[i].show * 0.1)
-              })
-            );
+/* spurs (closes, side roads, private drives) */
+const SPURS = GEO_SPURS.map((sp, i) => {
+  const R = ROADS[sp.p], g = mkPoly(sp.g.map(xy));
+  const j = project(R.g, g.pts[0]);
+  const probe = at(g, Math.min(15, g.L));
+  const side = Math.sign(project(R.g, [probe.x, probe.y]).cross) || 1; // +1 = left of canonical direction
+  return { i, road: sp.p, name: sp.n, g, js: j.s, side, n: 0 };
+});
 
-            infowindows.push(
-              new google.maps.InfoWindow({
-                content: contentString,
-                disableAutoPan: true
-              })
-            );
+/* records */
+const SKIP = new Set(['Santa', 'Elf', 'Star', 'BT']);
+const FIELD = { 'the drive': 'drive', 'chalk road': 'chalk', 'the ride': 'ride', 'hogwood road': 'hogwood', 'the lanes': 'lane', 'the lane': 'lane',
+  'the close': 'close', 'loxwood road': 'main', 'plaistow road': 'main', 'plasitow road': 'main', 'ifoldhurst': 'main',
+  'ifold bridge lane': 'ibl', 'poundfield lane': 'poundfield', 'forestry road': 'forestry' };
+const recs = FullArray.filter(r => r && !SKIP.has(r.icon)).map((r, id) => ({ id, label: String(r.label).trim().replace(/\)(?=[A-Za-z0-9])/g, '), '), field: String(r.road || '').trim(),
+  pc: String(r.postcode || '').trim(), lat: +r.lat, lng: +r.lng, icon: r.icon }));
 
-            wholeMapBounds.extend(position);
-          } // if
-        } // for i loop
-        map.fitBounds(wholeMapBounds, mapMarkerPadding);
+/* name unnamed spurs from the sign posts that stand at their mouths */
+for (const r of recs) if (r.icon === 'Sign Post') {
+  const P = xy([r.lat, r.lng]);
+  let best = null;
+  for (const sp of SPURS) { const d = Math.hypot(sp.g.pts[0][0] - P[0], sp.g.pts[0][1] - P[1]); if (!best || d < best.d) best = { d, sp }; }
+  if (best && best.d < 40 && !best.sp.name) best.sp.name = r.label;
+}
+const spurByName = {};
+for (const sp of SPURS) if (sp.name) spurByName[sp.name] = sp;
 
-        for (let j=0; j< markers.length; j++) {
-          markers[j].addListener('click', function() {
-            infowindows[j].open({map : map, anchor: markers[j], shouldFocus: true});      // was infowindows[i].open(map, markers[i]);infowindows[j].open(map, markers[j]);
-            infowindows[j].setZIndex(98);
-            markers[j].setZIndex(99);
-          } );
-        } // for j loop
-      } // end of initMap function
+/* geo distance along road -> distance along drawn line, piecewise linear between anchors */
+for (const k in ROADS) {
+  const R = ROADS[k];
+  const A = [[0, 0], [R.g.L, R.s.L]];
+  for (const [ref, pt] of R.anchors) {
+    const gs = typeof ref === 'string' ? (spurByName[ref] && spurByName[ref].road === k ? spurByName[ref].js : null) : project(R.g, xy(ref)).s;
+    if (gs == null) continue;
+    A.push([gs, project(R.s, pt).s]);
+  }
+  A.sort((a, b) => a[0] - b[0]);
+  R.map = gs => {
+    for (let i = 0; i < A.length - 1; i++) if (gs <= A[i + 1][0] || i === A.length - 2) {
+      const t = (gs - A[i][0]) / ((A[i + 1][0] - A[i][0]) || 1e-9);
+      return A[i][1] + clamp(t, 0, 1) * (A[i + 1][1] - A[i][1]);
+    }
+    return 0;
+  };
+}
 
-      function selectIcon(icon) {
-        let query = icon.substring(0,2).toLowerCase()
-        let link = "";
-        let iconUrl = "";
+/* landmarks per road for the "between" directions */
+for (const k in ROADS) ROADS[k].marks = [];
+for (const sp of SPURS) if (sp.name && sp.name !== 'Lakeside') ROADS[sp.road].marks.push({ s: sp.js, name: sp.name, side: sp.side, spur: sp });
+for (const [a, b, g] of JUNCTIONS) {
+  ROADS[a].marks.push({ s: project(ROADS[a].g, xy(g)).s, name: ROADS[b].sections ? roadName(ROADS[b], project(ROADS[b].g, xy(g)).s) : ROADS[b].name });
+  ROADS[b].marks.push({ s: project(ROADS[b].g, xy(g)).s, name: ROADS[a].sections ? roadName(ROADS[a], project(ROADS[a].g, xy(g)).s) : ROADS[a].name });
+}
+for (const k in ROADS) for (const [g, name] of ROADS[k].bends || []) ROADS[k].marks.push({ s: project(ROADS[k].g, xy(g)).s, name });
+for (const k in ROADS) {
+  const m = ROADS[k].marks.sort((x, y) => x.s - y.s), out = [];
+  for (const x of m) {
+    const prev = out[out.length - 1];
+    if (prev && Math.abs(prev.s - x.s) < 20 && !prev.spur && !x.spur) { if (!prev.name.split(' / ').includes(x.name)) prev.name += ' / ' + x.name; }
+    else out.push(Object.assign({}, x));
+  }
+  ROADS[k].marks = out;
+}
 
-        switch (query) {
-          case "ho": link = '1o181WJW7JZbksnXg0iBj2Vikj2VQ4ATK'; break; // House
-          case "bu": link = '1wT4_rmp7-hf5KyXrGn7nxw1tnrCZrV7Y'; break; // Bus Stop
-          case "ha": link = '1FD14dJTQ9Nx3-NFeP5nbhHYtsdlMUtqA'; break; // Hall
-          case "de": link = '1V1c-Nrg7Mo1CglC7APcpTASl4RV2Vi1k'; break; // Defibrillator
-          case "sh": link = '1a7Zw9UkRx-OeVWc4zoEENOzimsRl1buL'; break; // Shop
-          case "ga": link = '1NNLvfeLOVjmNvEyvRv7IAB--9br9ofDK'; break; // Garage
-          case "fi": link = '1_AtYmdmXJPNFBthKZEBgYiBXVKktahpH'; break; // Field
-          case "fa": link = '1F3HNd0vNzmDjy0ZvzSoL_OHTcBsw82iN'; break; // Farm
-          case "bt": link = '113lCl15nlA0Vaaab8Il8dcE9Asr7GRYU'; break; // BT Cabinet
-          case "si": link = '1U4vlECVPZI5NxbUCEiTH2dfbFuSIiXSD'; break; // Sign Post
-          case "15": link = '1Hw4jivITNJhTuutMXQo3KN2WM72uF_4-'; break; // 15mph Sign
-          case "20": link = '1eOaeF1MYmi0iA3EolX9bUfeTLmp7KBsv'; break; // 20mph Sign
-          case "30": link = '1Ub79PVqdnW-eVa9Gyu1eXYYYq1THa4o1'; break; // 30mph Sign
-          case "40": link = '1B4jyZNQ7BsVA2oZQ2hUV3Rx7MBpaQZ-L'; break;	// 40mph Sign
-          case "gr": link = '1DLVZrFLeNYCfMDXGBEvYyqRqTmucxnz_'; break;	// Grit Bin
-          case "sa": link = '1aLNZnwfXolkmJy26x5eEsAw_occkzBCF'; break; // Santa
-          case "el": link = '1rBVjAVW55Zw8LMBXNYPNmCYqxoOc6QqX'; break; // Elf
-          case "st": link = '16L1YWavDWDCRzy_uA6sk7qvKpRyB9BaR'; break; // Star
-          case "po": link = '1_1fCSIR0juis00Lv-RUyGn0RWQDE_d5s'; break; // Postbox
+/* assign every record to a road (or a close/drive off one) */
+const family = k => Object.keys(ROADS).filter(r => { for (let x = r; x; x = PARENT[x]) if (x === k) return true; return false; });
+for (const r of recs) {
+  const P = xy([r.lat, r.lng]);
+  const fk = FIELD[r.field.toLowerCase()];
+  const pick = keys => {
+    let m = null, sp = null;
+    for (const k of keys) { const p = project(ROADS[k].g, P); if (!m || p.d < m.p.d) m = { k, p }; }
+    for (const s of SPURS) if (keys.includes(s.road)) { const p = project(s.g, P); if (!sp || p.d < sp.p.d) sp = { s, p }; }
+    return { m, sp };
+  };
+  let { m, sp } = pick(fk ? family(fk) : Object.keys(ROADS));
+  if (m.p.d > 120 && !(sp && sp.p.d < 60)) ({ m, sp } = pick(Object.keys(ROADS)));
+  // a house called "6 Wildacre Close" or "2 Wychwood" belongs there, whatever is nearest
+  const cl = norm(r.label).replace(/ /g, '');
+  const named = SPURS.find(s => s.name && cl.includes(norm(s.name).replace(/ /g, '')));
+  if (named && r.icon === 'House') sp = { s: named, p: project(named.g, P) }, m = { k: named.road, p: { d: 1e9 } };
+  else if (r.icon === 'House' && cl.includes('wychwood')) { m = { k: 'wych', p: project(ROADS.wych.g, P) }; sp = null; }
+  if (sp && (named || (sp.p.d < 45 && sp.p.d < m.p.d - 4 && sp.p.s > 6))) {
+    r.road = sp.s.road; r.spur = sp.s; r.s = sp.s.js; r.side = sp.s.side; r.in = sp.p.s; r.inSide = Math.sign(sp.p.cross) || 1; r.off = sp.p.d;
+    if (r.icon === 'House') sp.s.n++;
+  } else {
+    r.road = m.k; r.s = m.p.s; r.side = Math.sign(m.p.cross) || 1; r.off = m.p.d;
+  }
+  // compass side of the road
+  const R = ROADS[r.road], q = at(R.g, r.s), nx = -q.dy * r.side, ny = q.dx * r.side;
+  const ang = (Math.atan2(nx, ny) * 180 / Math.PI + 360) % 360;
+  r.compass = ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'][Math.round(ang / 45) % 8];
+  r.roadName = roadName(R, r.s);
+  r.hay = norm([r.label, r.field, r.roadName, r.spur && r.spur.name, r.pc, r.pc.replace(/\s+/g, '')].filter(Boolean).join(' | '));
+}
 
-          default:   link = '113lCl15nlA0Vaaab8Il8dcE9Asr7GRYU'; break; // BT Cabinet
-        }
-        //iconUrl = 'http://drive.google.com/file/d/' + link + '/view?usp=sharing';
-        iconUrl = 'https://drive.google.com/uc?export=view&id=' + link;
-      return iconUrl;
-      }
-    </script>
-    
-    <div id="top">
-      <input id="txtResult" value="" />
-      <input id="searchInput" type="text" placeholder='type search here' />
-    </div>
-    
-    <script>
-      document.querySelector('#searchInput').addEventListener('input',
-        function() {
-          search();
-        }
-      );
+/* ---------- SVG drawing ---------- */
+const svg = document.getElementById('map');
+const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const a in attrs) e.setAttribute(a, attrs[a]); if (parent) parent.appendChild(e); return e; };
+const gHi = el('g', {}, svg), gBase = el('g', { id: 'base' }, svg), gTags = el('g', {}, svg), gHits = el('g', {}, svg), gSel = el('g', {}, svg);
 
-      // document.getElementById("txtResult").value = window.innerWidth;
-      
-      function search() {
-        var results = 0;
-        var maxResults = 7;
-        var myQuery = document.querySelector('#searchInput').value.toLowerCase();
-        var txtOut = document.getElementById("txtResult");
-        txtOut.value = '';
-        var newMapBounds = new google.maps.LatLngBounds();
-        
-        var myQueries = myQuery.split(' ');                      // creates an array of words
-          
-        for (let i = 0; i < markers.length; i++) {			// Loop through all the markers
-          let myText = infowindows[i].content.toString().toLowerCase();
-          let alwaysShow = markers[i].opacity;
-          infowindows[i].close();
-          
-          valid = true;
-          for (let subword = 0; subword < myQueries.length; subword++) {
-            valid = valid && ((myQuery.length >= 2) && (myText.includes(myQueries[subword])));     
-            if (valid === false) { break; }
-          }
-          
-          if (valid) {				                        // for markers where query is found
-            markers[i].setMap(map);
-            markers[i].setZIndex(9);
-            if (results <= maxResults) {
-              infowindows[i].open({map : map, anchor: markers[i], shouldFocus: false});    // was infowindows[i].open(map, markers[i]);
-              infowindows[i].setZIndex(8);
-            }
-            newMapBounds.extend(markers[i].position);
-            results++;
-          }
-    
-          else if (myText.includes('kelsey hall')) {
-            markers[i].setMap(map);
-            markers[i].setZIndex(8);
-            infowindows[i].open({map : map, anchor: markers[i], shouldFocus: false});      // was infowindows[i].open(map, markers[i]);
-            infowindows[i].setZIndex(9);
-            newMapBounds.extend(markers[i].position);
-          }
-          else if (alwaysShow < 1) {
-            markers[i].setMap(map);
-            markers[i].setZIndex(7);
-            infowindows[i].close();
-          }
-          else {
-            markers[i].setMap(null);								// for excluded markers
-            infowindows[i].close();
-          }
-        } // for
-        txtOut.value = "(" + results + " results)";
-        
-        if ((myQuery.length >= 2) && (results == 0)) txtOut.value = "No Match";
-        if ((myQuery.length < 2) && (results == 0)) txtOut.value = "width:" + window.innerWidth;
-        if ((myQuery.length < 2) && (results == 0)) newMapBounds = wholeMapBounds;
+// roundel
+(function () {
+  const g = el('g', { transform: 'translate(300 1185)', 'aria-hidden': 'true' }, gBase);
+  el('circle', { r: 66, fill: 'none', stroke: '#DC241F', 'stroke-width': 26 }, g);
+  el('rect', { x: -150, y: -27, width: 300, height: 54, fill: '#0019A8', stroke: 'var(--bg)', 'stroke-width': 3 }, g);
+  const t = el('text', { x: 0, y: 1, 'text-anchor': 'middle', 'dominant-baseline': 'central', fill: '#fff', 'font-size': 36, 'font-family': 'var(--font-display)', 'letter-spacing': 1 }, g);
+  t.textContent = 'IFOLD ESTATE';
+})();
 
-        map.fitBounds(newMapBounds, mapMarkerPadding);
-      }
+// the decorative Circle (yellow) loop from the original map, inside Chalk Road / The Drive / The Ride
+const YELLOW = (function () {
+  // follow the drawn centrelines of Chalk Road, The Drive and The Ride, offset inwards so the yellow sits flush against them
+  const K = 11.5, CX = 640, CY = 640, out = [];
+  const run = (R, from, to) => {
+    const s0 = project(R.s, from).s, s1 = project(R.s, to).s, n = Math.ceil(Math.abs(s1 - s0) / 2);
+    for (let i = 0; i <= n; i++) {
+      const q = at(R.s, s0 + (s1 - s0) * i / n);
+      let nx = q.dy, ny = -q.dx;
+      if ((CX - q.x) * nx + (CY - q.y) * ny < 0) { nx = -nx; ny = -ny; }
+      out.push([q.x + nx * K, q.y + ny * K]);
+    }
+  };
+  run(ROADS.chalk, [468, 710], [603, 453]);
+  run(ROADS.drive, [609, 447], [751, 993]);
+  run(ROADS.ride, [751, 993], [468, 710]);
+  out.push(out[0]);
+  return mkPoly(out);
+})();
+const nearYellow = (x, y) => project(YELLOW, [x, y]).d < 8;
 
-      function checkURL() {
-        const queryString = window.location.search;
-        const urlParams = new URLSearchParams(queryString);
-        let preload = '';
-        if (urlParams.has('search')) preload = urlParams.get('search');
+function drawLine(R, parent) {
+  const d = dstr(R.s.pts);
+  if (R.pill) {
+    el('path', { d, fill: 'none', stroke: 'var(--station-ring)', 'stroke-width': 16, 'stroke-linecap': 'round', class: 'line' }, parent);
+    el('path', { d, fill: 'none', stroke: 'var(--station-fill)', 'stroke-width': 6, 'stroke-linecap': 'round', class: 'line' }, parent);
+    return;
+  }
+  el('path', { d, fill: 'none', stroke: R.col, 'stroke-width': 12, 'stroke-linejoin': 'round', class: 'line' }, parent);
+  if (R.dbl) el('path', { d, fill: 'none', stroke: 'var(--bg)', 'stroke-width': 5, 'stroke-linejoin': 'round', class: 'line' }, parent);
+}
+el('path', { d: dstr(YELLOW.pts), fill: 'none', stroke: '#FFD300', 'stroke-width': 12, 'stroke-linejoin': 'round', class: 'line' }, gBase);
+for (const k of ['main', 'forestry', 'poundfield', 'lane', 'ibl', 'hogwood', 'ride', 'chalk', 'drive', 'wych', 'close']) drawLine(ROADS[k], gBase);
 
-        // http://search.ifold.estate/?search=house
-        if (preload != '') {
-          document.getElementById("searchInput").value = preload;
-        }
-      }
+// line ends (terminus bars) for dead ends
+function endBar(R, atStart) {
+  const q = at(R.s, atStart ? 0 : R.s.L);
+  el('line', { x1: q.x - q.dy * 15, y1: q.y + q.dx * 15, x2: q.x + q.dy * 15, y2: q.y - q.dx * 15, stroke: R.col, 'stroke-width': 9, class: 'line' }, gBase);
+}
+endBar(ROADS.hogwood, false); endBar(ROADS.ibl, false); endBar(ROADS.main, true); endBar(ROADS.main, false);
+endBar(ROADS.forestry, false); endBar(ROADS.poundfield, false);
 
-    </script>
-  </body>
+// station ticks for named closes and side roads
+const schPoint = (R, gs, side, off) => { const q = at(R.s, R.map(gs)); const nx = q.dy * side, ny = -q.dx * side; return { x: q.x + nx * off, y: q.y + ny * off, nx, ny, q }; };
+for (const sp of SPURS) {
+  if (!sp.name) continue;
+  const R = ROADS[sp.road], base = schPoint(R, sp.js, sp.side, 0);
+  const yel = nearYellow(base.x + base.nx * 12, base.y + base.ny * 12);
+  const len = yel ? 26 : 15;
+  el('line', { x1: base.x, y1: base.y, x2: base.x + base.nx * len, y2: base.y + base.ny * len, stroke: R.col, 'stroke-width': 8, class: 'tick' }, gBase);
+  let L = LABEL_AT[sp.name];
+  if (!L) {
+    const lx = base.x + base.nx * (len + 8), ly = base.y + base.ny * (len + 8);
+    L = [lx, ly + (Math.abs(base.nx) < 0.4 ? (base.ny > 0 ? 10 : -6) : 0), base.nx > 0.35 ? 'start' : base.nx < -0.35 ? 'end' : 'middle'];
+  }
+  const t = el('text', { x: L[0], y: L[1], 'text-anchor': L[2], 'dominant-baseline': 'central', 'font-size': 19, class: 'lbl' }, gBase);
+  t.textContent = sp.name;
+}
+// interchanges
+for (const [x, y] of INTERCHANGES) el('circle', { cx: x, cy: y, r: 11, fill: 'var(--station-fill)', stroke: 'var(--station-ring)', 'stroke-width': 5 }, gBase);
+for (const x of [751, 693]) el('circle', { cx: x, cy: 858, r: 11, fill: 'var(--station-fill)', stroke: 'var(--station-ring)', 'stroke-width': 5 }, gBase);
+
+// road name tags
+function tag(R, T) {
+  const g = el('g', { transform: `translate(${T.x} ${T.y}) rotate(${T.rot || 0})` }, gTags);
+  const t = el('text', { x: 0, y: 1, 'text-anchor': 'middle', 'dominant-baseline': 'central', class: 'road-tag', fill: R.tagInk }, g);
+  t.textContent = T.text || R.name;
+  const w = (t.getComputedTextLength ? t.getComputedTextLength() : 0) || (t.textContent.length * 8);
+  const dx = T.anchor === 'start' ? w / 2 + 9 : T.anchor === 'end' ? -w / 2 - 9 : 0;
+  t.setAttribute('x', dx);
+  el('rect', { x: dx - w / 2 - 9, y: -12, width: w + 18, height: 24, rx: 12, fill: R.col, stroke: 'var(--bg)', 'stroke-width': 2 }, g);
+  g.insertBefore(g.lastChild, t);
+}
+for (const k in ROADS) { tag(ROADS[k], ROADS[k].tag); if (ROADS[k].tag2) tag(ROADS[k], ROADS[k].tag2); }
+
+/* position of a record on the drawn map */
+function place(r) {
+  const R = ROADS[r.road];
+  let off = r.spur ? 26 + Math.min(r.in * 0.12, 26) : 17;
+  let p = schPoint(R, r.s, r.side, off);
+  if (nearYellow(p.x, p.y) || (r.spur && nearYellow(p.q.x + p.nx * 12, p.q.y + p.ny * 12))) { off += 14; p = schPoint(R, r.s, r.side, off); }
+  return p;
+}
+for (const r of recs) r.pt = place(r);
+
+/* ---------- view box: pan / zoom ---------- */
+const wrap = document.getElementById('wrap');
+const FULL = { x: 40, y: 95, w: 980, h: 1180 };
+let vb = { ...FULL }, anim = 0;
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function apply() { svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`); }
+function fitBox(b, pad) {
+  const cw = wrap.clientWidth || 400, ch = wrap.clientHeight || 600, a = cw / ch;
+  let x = b.x - pad, y = b.y - pad, w = b.w + pad * 2, h = b.h + pad * 2;
+  if (w / h < a) { const nw = h * a; x -= (nw - w) / 2; w = nw; } else { const nh = w / a; y -= (nh - h) / 2; h = nh; }
+  return { x, y, w, h };
+}
+function go(target) {
+  cancelAnimationFrame(anim);
+  if (reduce) { vb = target; apply(); return; }
+  const from = { ...vb }, t0 = performance.now();
+  const step = now => {
+    const t = clamp((now - t0) / 380, 0, 1), e = 1 - Math.pow(1 - t, 3);
+    for (const k in vb) vb[k] = from[k] + (target[k] - from[k]) * e;
+    apply(); if (t < 1) anim = requestAnimationFrame(step);
+  };
+  anim = requestAnimationFrame(step);
+}
+function fitInto(b, pad, bottom) {
+  const cw = wrap.clientWidth || 400, ch = wrap.clientHeight || 600, avail = Math.max(140, ch - bottom);
+  const k = Math.min((cw - 60) / (b.w + pad * 2), avail / (b.h + pad * 2));
+  const W = cw / k, H = ch / k;
+  return { x: b.x + b.w / 2 - W / 2, y: b.y + b.h / 2 - (avail / 2) / k, w: W, h: H };
+}
+const bbox = pts => { const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]); const x = Math.min(...xs), y = Math.min(...ys); return { x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y }; };
+function minSize(b, m) { if (b.w < m) { b.x -= (m - b.w) / 2; b.w = m; } if (b.h < m) { b.y -= (m - b.h) / 2; b.h = m; } return b; }
+function zoomAt(f, cx, cy) {
+  cancelAnimationFrame(anim);
+  const nw = clamp(vb.w * f, 150, 2400), k = nw / vb.w;
+  vb = { x: cx - (cx - vb.x) * k, y: cy - (cy - vb.y) * k, w: vb.w * k, h: vb.h * k }; apply();
+}
+function toSvg(clientX, clientY) { const r = svg.getBoundingClientRect(); return [vb.x + (clientX - r.left) / r.width * vb.w, vb.y + (clientY - r.top) / r.height * vb.h]; }
+svg.addEventListener('wheel', e => { e.preventDefault(); const [x, y] = toSvg(e.clientX, e.clientY); zoomAt(Math.exp(e.deltaY * 0.0015), x, y); }, { passive: false });
+const ptrs = new Map(); let pinch = null, dragged = false;
+svg.addEventListener('pointerdown', e => { ptrs.set(e.pointerId, [e.clientX, e.clientY]); dragged = false; if (ptrs.size === 2) pinch = null; });
+addEventListener('pointermove', e => {
+  if (!ptrs.has(e.pointerId)) return;
+  const prev = ptrs.get(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+  const r = svg.getBoundingClientRect();
+  if (ptrs.size === 1) {
+    const dx = e.clientX - prev[0], dy = e.clientY - prev[1];
+    if (!dragged && Math.hypot(dx, dy) < 2) return;
+    dragged = true; svg.classList.add('drag'); cancelAnimationFrame(anim);
+    vb.x -= dx / r.width * vb.w; vb.y -= dy / r.height * vb.h; apply();
+  } else if (ptrs.size === 2) {
+    const [a, b] = [...ptrs.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+    const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+    if (pinch) { const [sx, sy] = toSvg(mx, my); zoomAt(pinch.d / d, sx, sy); vb.x -= (mx - pinch.mx) / r.width * vb.w; vb.y -= (my - pinch.my) / r.height * vb.h; apply(); }
+    pinch = { d, mx, my }; dragged = true;
+  }
+});
+const up = e => { ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null; if (!ptrs.size) svg.classList.remove('drag'); };
+addEventListener('pointerup', up); addEventListener('pointercancel', up);
+document.getElementById('zin').onclick = () => zoomAt(0.7, vb.x + vb.w / 2, vb.y + vb.h / 2);
+document.getElementById('zout').onclick = () => zoomAt(1 / 0.7, vb.x + vb.w / 2, vb.y + vb.h / 2);
+document.getElementById('zfit').onclick = () => go(fitBox(FULL, 0));
+addEventListener('resize', () => { if (!sel && !hits.length) { vb = fitBox(FULL, 0); apply(); } });
+
+/* ---------- search ---------- */
+function norm(s) { return String(s).toLowerCase().replace(/&/g, ' and ').replace(/['’]/g, '').replace(/[^a-z0-9]+/g, ' ').trim(); }
+function search(q) {
+  const nq = norm(q); if (!nq) return [];
+  const toks = nq.split(' '), compact = nq.replace(/ /g, '');
+  const out = [];
+  for (const r of recs) {
+    if (r.icon === 'Sign Post') continue;
+    if (!toks.every(t => r.hay.includes(t)) && !(compact.length >= 4 && r.hay.replace(/ /g, '').includes(compact))) continue;
+    const L = norm(r.label);
+    let sc = 10;
+    if (L === nq) sc = 100; else if (L.startsWith(nq)) sc = 80; else if ((' ' + L).includes(' ' + nq)) sc = 60; else if (L.includes(nq)) sc = 40;
+    if (r.icon !== 'House') sc -= 3;
+    out.push({ r, sc });
+  }
+  out.sort((a, b) => b.sc - a.sc || a.r.label.localeCompare(b.r.label, 'en', { numeric: true }));
+  return out.map(o => o.r);
+}
+
+/* ---------- rendering states ---------- */
+const $q = document.getElementById('q'), $res = document.getElementById('res'), $meta = document.getElementById('meta');
+const $sheet = document.getElementById('sheet'), $card = document.getElementById('card'), $clr = document.getElementById('clr');
+let hits = [], sel = null, fromList = false;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const colOf = r => { const c = ROADS[r.road].col; return c.startsWith('var') ? 'var(--fg)' : c; };
+const ord = n => n + (n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th');
+const metres = m => m < 15 ? 'just past' : 'about ' + (Math.round(m / 10) * 10) + ' m after';
+
+function where(r) {
+  return r.spur ? (r.spur.name ? `In ${r.spur.name}, off ${r.roadName}` : `Private drive off ${r.roadName}, ${r.compass} side`) : `${cap(r.compass)} side of ${r.roadName}`;
+}
+const cap = s => s[0].toUpperCase() + s.slice(1);
+
+function renderMeta() {
+  const q = $q.value.trim();
+  $clr.hidden = !q;
+  if (!q) {
+    $meta.innerHTML = '<span>Try</span>' + ['Acorns', 'Oak Way', 'RH14 0TE', 'Chalk Road'].map(t => `<button class="chip" type="button" data-q="${t}">${t}</button>`).join('');
+  } else if (!hits.length) {
+    $meta.innerHTML = `<span>No match for “${esc(q)}”. Check the spelling, or try part of the name, the road or the postcode.</span>`;
+  } else if (sel && fromList) {
+    $meta.innerHTML = `<button class="chip" type="button" id="back">← All ${hits.length} results</button>`;
+  } else if (hits.length > 1) {
+    $meta.innerHTML = `<span><span class="count">${hits.length}</span> matches. Keep typing to narrow down, or pick one.</span>`;
+  } else $meta.innerHTML = '';
+}
+$meta.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.id === 'back') { sel = null; fromList = false; renderAll(); }
+  else if (b.dataset.q) { $q.value = b.dataset.q; run(); }
+});
+
+function renderList() {
+  if (sel || hits.length < 2) { $res.hidden = true; $res.innerHTML = ''; return; }
+  const max = 150;
+  $res.innerHTML = '<ol>' + hits.slice(0, max).map(r => `<li><button type="button" data-id="${r.id}" style="--sw:${colOf(r)}">
+    <span class="sw"></span><span style="min-width:0"><span class="nm">${esc(r.label)}</span><span class="sub">${esc(where(r))}</span></span><span class="pc">${esc(r.pc.startsWith('RH') ? r.pc : '')}</span></button></li>`).join('') + '</ol>'
+    + (hits.length > max ? `<div class="more">and ${hits.length - max} more — add a word to narrow it down</div>` : '');
+  $res.hidden = false; $res.scrollTop = 0;
+}
+$res.addEventListener('click', e => { const b = e.target.closest('button[data-id]'); if (b) choose(recs[+b.dataset.id], true); });
+$res.addEventListener('pointerover', e => { const b = e.target.closest('button[data-id]'); hot(b ? +b.dataset.id : -1); });
+$res.addEventListener('pointerleave', () => hot(-1));
+function hot(id) {
+  for (const g of gHits.children) g.classList.toggle('hot', +g.dataset.id === id);
+  const g = [...gHits.children].find(g => +g.dataset.id === id); if (g) gHits.appendChild(g);
+}
+
+function renderDots() {
+  gHits.innerHTML = '';
+  if (sel) return;
+  for (const r of hits) {
+    const g = el('g', { class: 'hitdot', 'data-id': r.id }, gHits);
+    el('circle', { cx: r.pt.x, cy: r.pt.y, r: 6.5, fill: 'var(--hit)', stroke: 'var(--bg)', 'stroke-width': 2.5 }, g);
+    const t = el('title', {}, g); t.textContent = r.label;
+  }
+}
+gHits.addEventListener('click', e => { if (dragged) return; const g = e.target.closest('.hitdot'); if (g) choose(recs[+g.dataset.id], hits.length > 1); });
+
+/* directions for one direction of travel */
+function leg(r, fwd) {
+  const R = ROADS[r.road], s = r.s, sgn = fwd ? 1 : -1;
+  const ownMark = m => r.spur && m.spur === r.spur;
+  const marks = R.marks.filter(m => !ownMark(m));
+  let prev = null, next = null;
+  for (const m of marks) {
+    const d = (m.s - s) * sgn;
+    if (d <= 3 && (!prev || d > (prev.s - s) * sgn)) prev = m;
+    if (d > 3 && (!next || d < (next.s - s) * sgn)) next = m;
+  }
+  const side = r.side * sgn > 0 ? 'L' : 'R';
+  // count entrances on this side between the previous landmark and this one
+  let nth = null;
+  if (prev && !(r.spur && r.spur.name)) {
+    const keys = new Set();
+    for (const o of recs) {
+      if (o.road !== r.road || o.side !== r.side || o.icon !== 'House' || (o.spur && o.spur.name)) continue;
+      const d0 = (o.s - prev.s) * sgn, d1 = (s - o.s) * sgn;
+      if (d0 > 0 && d1 >= -1) keys.add(o.spur ? 'sp' + o.spur.i : 'h' + o.id);
+    }
+    nth = keys.size || null;
+  }
+  return { side, prev, next, dist: prev ? Math.abs(s - prev.s) : null, nth, head: R.dirs[fwd ? 0 : 1] };
+}
+function legHTML(r, L) {
+  const sideW = L.side === 'L' ? 'left' : 'right';
+  const after = L.prev ? `${metres(L.dist)} <b>${esc(L.prev.name)}</b>` : 'near the start of the road';
+  const before = L.next ? `before <b>${esc(L.next.name)}</b>` : 'before the end of the road';
+  let body;
+  if (r.spur && r.spur.name) body = `Turn ${sideW} into <b>${esc(r.spur.name)}</b>${L.prev ? ', ' + after : ''}.`;
+  else if (r.spur) body = `Private drive on your ${sideW}, ${after}, ${before}.${r.spur.n > 1 ? ` Shared by ${r.spur.n} homes.` : ''}`;
+  else body = `On your ${sideW}, ${after}, ${before}.${L.nth ? ` Roughly the ${ord(L.nth)} house on that side after ${esc(L.prev.name)}.` : ''}`;
+  return `<div class="dir"><div class="side ${L.side}">${L.side === 'L' ? 'LEFT' : 'RIGHT'}</div><div class="head">${esc(L.head)}</div><div class="body">${body}</div></div>`;
+}
+
+function renderSel() {
+  gSel.innerHTML = ''; gHi.innerHTML = '';
+  if (!sel) { $sheet.hidden = true; gBase.classList.remove('dim'); return; }
+  const r = sel, R = ROADS[r.road];
+  const F = leg(r, true), B = leg(r, false);
+  // highlight the stretch between the neighbouring side roads
+  const s0 = F.prev ? F.prev.s : 0, s1 = F.next ? F.next.s : R.g.L;
+  const stretch = slice(R.s, R.map(s0), R.map(s1));
+  el('path', { d: dstr(stretch), fill: 'none', stroke: R.col, 'stroke-opacity': 0.32, 'stroke-width': 34, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, gHi);
+  // big station marker joined to the road on the correct side
+  const p = r.pt, base = at(R.s, R.map(r.s));
+  el('line', { x1: base.x, y1: base.y, x2: p.x, y2: p.y, stroke: 'var(--station-ring)', 'stroke-width': 6 }, gSel);
+  el('circle', { cx: p.x, cy: p.y, r: 13, fill: 'var(--station-fill)', stroke: 'var(--station-ring)', 'stroke-width': 6 }, gSel);
+  const horiz = Math.abs(p.nx) > 0.35, anchor = horiz ? (p.nx > 0 ? 'start' : 'end') : 'middle';
+  const lx = p.x + p.nx * 24, ly = p.y + p.ny * 24 + (horiz ? 0 : (p.ny > 0 ? 14 : -14));
+  const t = el('text', { x: lx, y: ly, 'text-anchor': anchor, 'dominant-baseline': 'central', 'font-size': 30, class: 'lbl', style: 'stroke-width:7px' }, gSel);
+  t.textContent = r.label;
+  const tb = t.getBBox ? t.getBBox() : { x: lx, y: ly - 15, width: r.label.length * 15, height: 30 };
+  // fit view
+  const pts = stretch.concat([[p.x, p.y], [tb.x, tb.y], [tb.x + tb.width, tb.y + tb.height]]);
+  const b = minSize(bbox(pts), 300);
+  gBase.classList.add('dim');
+  // card
+  const pill = `<span class="pill" style="background:${R.col};color:${R.tagInk}">${esc(r.roadName)}</span>`;
+  const inner = r.spur ? `<div class="note">${r.spur.name ? `Inside ${esc(r.spur.name)}` : 'Down the drive'}, the house is on your <b>${r.inSide > 0 ? 'left' : 'right'}</b> as you drive in, about ${Math.max(10, Math.round(r.in / 10) * 10)} m from ${esc(r.roadName)}.</div>` : '';
+  const setback = !r.spur && r.off > 55 ? `<div class="note">Set back about ${Math.round(r.off / 10) * 10} m from the road. Look for a driveway.</div>` : '';
+  $card.innerHTML = `<button class="closebtn" type="button" id="x">Close</button>
+    <h2>${esc(r.label)}</h2>
+    <div class="where">${pill}<span>${esc(where(r).replace(' of ' + r.roadName, '').replace(', off ' + r.roadName, ''))}</span>${r.pc.startsWith('RH') ? `<span>${esc(r.pc)}</span>` : ''}</div>
+    <div class="dirs">${legHTML(r, F)}${legHTML(r, B)}</div>${inner}${setback}`;
+  $sheet.hidden = false;
+  go(fitInto(b, 30, $sheet.offsetHeight + 8)); // keep the station clear of the card
+  document.getElementById('x').onclick = () => { if (fromList) { sel = null; renderAll(); } else clearAll(); };
+}
+
+function renderAll() {
+  renderMeta(); renderList(); renderDots(); renderSel();
+  if (!sel) {
+    if (hits.length) {
+      const b = minSize(bbox(hits.map(r => [r.pt.x, r.pt.y])), 360);
+      go(fitBox(b, 60));
+    } else go(fitBox(FULL, 0));
+  }
+}
+function choose(r, viaList) { sel = r; fromList = !!viaList; renderAll(); }
+function run() {
+  hits = search($q.value);
+  sel = hits.length === 1 ? hits[0] : null; fromList = false;
+  renderAll();
+}
+function clearAll() { $q.value = ''; hits = []; sel = null; renderAll(); }
+let tmr;
+$q.addEventListener('input', () => { clearTimeout(tmr); tmr = setTimeout(run, 120); });
+document.getElementById('f').addEventListener('submit', e => { e.preventDefault(); clearTimeout(tmr); hits = search($q.value); if (hits.length) choose(hits[0], hits.length > 1); else run(); $q.blur(); });
+$clr.onclick = () => { clearAll(); $q.focus(); };
+addEventListener('keydown', e => { if (e.key === 'Escape') { if (sel && fromList) { sel = null; renderAll(); } else clearAll(); } });
+
+vb = fitBox(FULL, 0); apply();
+// deep link: #Acorns style anchors pre-fill the search
+// ?search=house links from the old search.ifold.estate site keep working
+let h = '';
+try { h = new URLSearchParams(location.search).get('search') || ''; } catch (e) {}
+if (!h) h = decodeURIComponent(location.hash.slice(1)).replace(/[._~-]/g, ' ');
+if (h) { $q.value = h; run(); } else renderAll();
+window.__ifold = { recs, ROADS, SPURS, search, leg };
+})();
+
+</script>
+
+<script>
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+</script>
+</body>
 </html>
