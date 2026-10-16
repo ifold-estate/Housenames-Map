@@ -66,7 +66,7 @@ header{flex:none;padding-block:10px 8px;padding-left:max(16px,env(safe-area-inse
 .toggle::after{content:" ▴"}
 .toggle[aria-expanded="false"]::after{content:" ▾"}
 .count{font-variant-numeric:tabular-nums;color:var(--fg)}
-.results{max-width:760px;width:100%;margin:0 auto;max-height:max(130px,calc(50vh - 118px));max-height:max(130px,calc(50dvh - 118px));overflow:auto;overscroll-behavior:contain;border:1px solid var(--rule);border-radius:12px;background:var(--bg)}
+.results{position:relative;max-width:760px;width:100%;margin:0 auto;max-height:max(130px,calc(50vh - 118px));max-height:max(130px,calc(50dvh - 118px));overflow:auto;overscroll-behavior:contain;border:1px solid var(--rule);border-radius:12px;background:var(--bg)}
 .results ol{list-style:none;margin:0;padding:4px 0}
 .results li button{all:unset;box-sizing:border-box;display:grid;grid-template-columns:14px 1fr auto;gap:10px;align-items:center;width:100%;padding:8px 12px;cursor:pointer}
 .results li button:hover,.results li button:focus-visible,.results li button.hot{background:var(--panel)}
@@ -790,7 +790,7 @@ $meta.addEventListener('click', e => {
 
 function renderList() {
   if (sel || hits.length < 2 || (!listOpen && !WIDE.matches)) { $res.hidden = true; if (sel || hits.length < 2) $res.innerHTML = ''; return; }
-  const max = 150;
+  const max = 600;
   $res.innerHTML = '<ol>' + hits.slice(0, max).map(r => `<li><button type="button" data-id="${r.id}" style="--sw:${colOf(r)}">
     <span class="sw"></span><span style="min-width:0"><span class="nm">${esc(r.label)}</span><span class="sub">${esc(where(r))}</span></span><span class="pc">${esc(r.pc.startsWith('RH') ? r.pc : '')}</span></button></li>`).join('') + '</ol>'
     + (hits.length > max ? `<div class="more">and ${hits.length - max} more — add a word to narrow it down</div>` : '');
@@ -805,7 +805,7 @@ function hot(id) {
 }
 
 function renderDots() {
-  gHits.innerHTML = '';
+  gHits.innerHTML = ''; gTip.innerHTML = '';
   if (sel) return;
   for (const r of hits) {
     const g = el('g', { class: 'hitdot', 'data-id': r.id }, gHits);
@@ -814,6 +814,25 @@ function renderDots() {
   }
 }
 gHits.addEventListener('click', e => { if (dragged) return; const g = e.target.closest('.hitdot'); if (g) choose(recs[+g.dataset.id], hits.length > 1); });
+// hovering a dot: name it on the map, and highlight + scroll to it in the results list
+const gTip = el('g', { 'pointer-events': 'none' }, svg);
+function tipFor(id) {
+  gTip.innerHTML = '';
+  for (const b of $res.querySelectorAll('button.hot')) b.classList.remove('hot');
+  hot(id);
+  if (id < 0) return;
+  const r = recs[id], k = vb.w / (svg.getBoundingClientRect().width || 800); // keep the name a steady size on screen
+  const t = el('text', { x: r.pt.x + 12 * k, y: r.pt.y - 12 * k, 'font-size': (17 * k).toFixed(1), class: 'lbl', style: `stroke-width:${(5 * k).toFixed(1)}px` }, gTip);
+  t.textContent = r.label;
+  const btn = $res.querySelector(`button[data-id="${id}"]`);
+  if (btn && !$res.hidden) {
+    btn.classList.add('hot');
+    const top = btn.offsetTop, bottom = top + btn.offsetHeight;
+    if (top < $res.scrollTop || bottom > $res.scrollTop + $res.clientHeight) $res.scrollTo({ top: top - $res.clientHeight / 2 + btn.offsetHeight / 2, behavior: reduce ? 'auto' : 'smooth' });
+  }
+}
+gHits.addEventListener('pointerover', e => { const g = e.target.closest('.hitdot'); if (g && e.pointerType !== 'touch') tipFor(+g.dataset.id); });
+gHits.addEventListener('pointerout', e => { const g = e.target.closest('.hitdot'); if (g && !g.contains(e.relatedTarget)) tipFor(-1); });
 
 /* directions for one direction of travel */
 function leg(r, fwd) {
