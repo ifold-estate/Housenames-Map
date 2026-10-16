@@ -329,7 +329,7 @@ const ROADS = {
     tag: { x: 512, y: 666, rot: -45 } },
   ride: { name: 'The Ride', col: '#00782A', tagInk: '#fff', geo: GEO_ROADS.ride, r: 40,
     sch: [[250, 600], [358, 600], [751, 993]],
-    anchors: [[[51.069072, -0.541878], [468, 710]], ['Mill House', [500, 742]], ['Chequer Close', [712, 954]]],
+    anchors: [[[51.069072, -0.541878], [468, 710]], ['Mill House', [500, 742]], ['Chequer Close', [688, 930]]],
     dirs: ['Heading east from Loxwood Road', 'Heading west from The Drive'],
     tag: { x: 420, y: 662, rot: 45 } },
   lane: { name: 'The Lane', col: 'var(--track-black)', tagInk: 'var(--bg)', geo: rev(GEO_ROADS.lane), r: 18,
@@ -357,7 +357,7 @@ const ROADS = {
   main: { name: 'Plaistow Road', col: '#DC241F', tagInk: '#fff', geo: MAIN_GEO, r: 36,
     sch: [[80, 600], [250, 600], [250, 768], [702, 1220], [900, 1220]],
     anchors: [[[51.069915, -0.547992], [175, 600]], [[51.069941, -0.547003], [250, 600]], [[51.06814, -0.54398], [330, 848]], [[51.064054, -0.530882], [751, 1220]]],
-    sections: [[51.06841, -0.544381], 'Loxwood Road', 'Plaistow Road'],
+    sections: [[51.06814, -0.54398], 'Loxwood Road', 'Plaistow Road'], col1: '#EE7C0E', // Loxwood Road (orange) up to Chalk Road, Plaistow Road (red) after
     dirs: ['Heading east (from Loxwood towards Plaistow)', 'Heading west (from Plaistow towards Loxwood)'],
     tag: { x: 636, y: 1154, rot: 45 }, tag2: { x: 250, y: 690, rot: -90, text: 'Loxwood Road' } },
   poundfield: { name: 'Poundfield Lane', col: '#7156A5', tagInk: '#fff', geo: GEO_ROADS.poundfield, r: 0,
@@ -382,8 +382,8 @@ const LABEL_AT = {
   'Thistledown Vale': [776, 449, 'start'], 'Loxmeadow Close': [776, 494, 'start'], 'Oakdene Place': [776, 540, 'start'],
   'Hawthorn Close': [776, 632, 'start'], 'Springfields Close': [776, 734, 'start'], 'Wildacre Close': [776, 775, 'start'],
   'Birchwood Close': [776, 819, 'start'], 'Oak Way': [776, 899, 'start'], 'Woodland Copse': [776, 1032, 'start'],
-  'Simmons Place': [776, 1078, 'start'], 'Chequer Close': [690, 970, 'end'], 'Mill House': [410, 786, 'start'],
-  'Kelsey Hall': [536, 600, 'end'], 'Sycamore Close': [578, 518, 'end'], 'Pannells Ash': [362, 446, 'middle'],
+  'Simmons Place': [776, 1078, 'start'], 'Chequer Close': [664, 946, 'end'], 'Mill House': [410, 786, 'start'],
+  'Kelsey Hall': [536, 600, 'end'], 'The Close': [776, 858, 'start'], 'Wychwood': [668, 720, 'middle'], 'Sycamore Close': [578, 518, 'end'], 'Pannells Ash': [362, 446, 'middle'],
 };
 
 /* build road geometry */
@@ -395,6 +395,7 @@ for (const k in ROADS) {
   if (R.sections) R.secS = project(R.g, xy(R.sections[0])).s;
 }
 const roadName = (R, s) => R.sections ? (s < R.secS ? R.sections[1] : R.sections[2]) : R.name;
+const colAt = (R, s) => R.sections && s < R.secS ? R.col1 : R.col;
 
 /* spurs (closes, side roads, private drives) */
 const SPURS = GEO_SPURS.map((sp, i) => {
@@ -532,7 +533,7 @@ const gHi = el('g', {}, svg), gBase = el('g', { id: 'base' }, svg), gTags = el('
 
 // roundel
 (function () {
-  const g = el('g', { transform: 'translate(300 1185)', 'aria-hidden': 'true' }, gBase);
+  const g = el('g', { transform: 'translate(470 1188)', 'aria-hidden': 'true' }, gBase);
   el('circle', { r: 66, fill: 'none', stroke: '#DC241F', 'stroke-width': 26 }, g);
   el('rect', { x: -150, y: -27, width: 300, height: 54, fill: '#0019A8', stroke: 'var(--bg)', 'stroke-width': 3 }, g);
   const t = el('text', { x: 0, y: 1, 'text-anchor': 'middle', 'dominant-baseline': 'central', fill: '#fff', 'font-size': 36, 'font-family': 'var(--font-display)', 'letter-spacing': 1 }, g);
@@ -571,12 +572,15 @@ function drawLine(R, parent) {
   if (R.dbl) el('path', { d, fill: 'none', stroke: 'var(--bg)', 'stroke-width': 5, 'stroke-linejoin': 'round', class: 'line' }, parent);
 }
 el('path', { d: dstr(YELLOW.pts), fill: 'none', stroke: '#FFD300', 'stroke-width': 12, 'stroke-linejoin': 'round', class: 'line' }, gBase);
-for (const k of ['main', 'forestry', 'poundfield', 'lane', 'ibl', 'hogwood', 'ride', 'chalk', 'drive', 'wych', 'close']) drawLine(ROADS[k], gBase);
+for (const k of ['main', 'forestry', 'poundfield', 'lane', 'ibl', 'hogwood', 'ride', 'chalk', 'drive', 'wych', 'close']) {
+  drawLine(ROADS[k], gBase);
+  if (k === 'main') el('path', { d: dstr(slice(ROADS.main.s, 0, ROADS.main.map(ROADS.main.secS))), fill: 'none', stroke: ROADS.main.col1, 'stroke-width': 12, 'stroke-linejoin': 'round', class: 'line' }, gBase);
+}
 
 // line ends (terminus bars) for dead ends
 function endBar(R, atStart) {
   const q = at(R.s, atStart ? 0 : R.s.L);
-  el('line', { x1: q.x - q.dy * 15, y1: q.y + q.dx * 15, x2: q.x + q.dy * 15, y2: q.y - q.dx * 15, stroke: R.col, 'stroke-width': 9, class: 'line' }, gBase);
+  el('line', { x1: q.x - q.dy * 15, y1: q.y + q.dx * 15, x2: q.x + q.dy * 15, y2: q.y - q.dx * 15, stroke: colAt(R, atStart ? 0 : R.g.L), 'stroke-width': 9, class: 'line' }, gBase);
 }
 endBar(ROADS.hogwood, false); endBar(ROADS.ibl, false); endBar(ROADS.main, true); endBar(ROADS.main, false);
 endBar(ROADS.forestry, false); endBar(ROADS.poundfield, false);
@@ -588,7 +592,27 @@ for (const sp of SPURS) {
   const R = ROADS[sp.road], base = schPoint(R, sp.js, sp.side, 0);
   const yel = nearYellow(base.x + base.nx * 12, base.y + base.ny * 12);
   const len = yel ? 26 : 15;
-  el('line', { x1: base.x, y1: base.y, x2: base.x + base.nx * len, y2: base.y + base.ny * len, stroke: R.col, 'stroke-width': 8, class: 'tick' }, gBase);
+  el('line', { x1: base.x, y1: base.y, x2: base.x + base.nx * len, y2: base.y + base.ny * len, stroke: colAt(R, sp.js), 'stroke-width': 8, class: 'tick' }, gBase);
+  // labels set at 45 degrees, running out from the tick (or alongside the line where the tick side is crowded)
+  const ROT45 = { 'Foxbridge Lane': 'out', 'Ifoldhurst': 'out', 'Sylvania Copse': 'out', 'Mill House': 'out', 'Kelsey Hall': 'along-same', 'Thistledown Vale': 'out', 'Chequer Close': 'out-opposite' };
+  if (ROT45[sp.name]) {
+    let x, y, ang, anchor;
+    const mode = ROT45[sp.name];
+    if (mode === 'out') {           // runs out from the tick
+      x = base.x + base.nx * (len + 6); y = base.y + base.ny * (len + 6);
+      ang = Math.atan2(base.ny, base.nx) * 180 / Math.PI; anchor = 'start';
+    } else if (mode === 'out-opposite') { // runs out from the other side of the line
+      x = base.x - base.nx * 14; y = base.y - base.ny * 14;
+      ang = Math.atan2(-base.ny, -base.nx) * 180 / Math.PI; anchor = 'start';
+    } else {                        // alongside the line, on the tick side
+      x = base.x + base.nx * (len + 14); y = base.y + base.ny * (len + 14);
+      ang = Math.atan2(base.q.dy, base.q.dx) * 180 / Math.PI; anchor = 'middle';
+    }
+    if (ang > 90) { ang -= 180; if (anchor === 'start') anchor = 'end'; } else if (ang < -90) { ang += 180; if (anchor === 'start') anchor = 'end'; }
+    const t = el('text', { x, y, 'text-anchor': anchor, 'dominant-baseline': 'central', 'font-size': 19, class: 'lbl', transform: `rotate(${ang.toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)})` }, gBase);
+    t.textContent = sp.name;
+    continue;
+  }
   let L = LABEL_AT[sp.name];
   if (!L) {
     const lx = base.x + base.nx * (len + 8), ly = base.y + base.ny * (len + 8);
@@ -597,6 +621,7 @@ for (const sp of SPURS) {
   const t = el('text', { x: L[0], y: L[1], 'text-anchor': L[2], 'dominant-baseline': 'central', 'font-size': 19, class: 'lbl' }, gBase);
   t.textContent = sp.name;
 }
+for (const n of ['The Close', 'Wychwood']) { const L = LABEL_AT[n]; const t = el('text', { x: L[0], y: L[1], 'text-anchor': L[2], 'dominant-baseline': 'central', 'font-size': 19, class: 'lbl' }, gBase); t.textContent = n; }
 // interchanges
 for (const [x, y] of INTERCHANGES) el('circle', { cx: x, cy: y, r: 11, fill: 'var(--station-fill)', stroke: 'var(--station-ring)', 'stroke-width': 5 }, gBase);
 for (const x of [751, 693]) el('circle', { cx: x, cy: 858, r: 11, fill: 'var(--station-fill)', stroke: 'var(--station-ring)', 'stroke-width': 5 }, gBase);
@@ -612,7 +637,28 @@ function tag(R, T) {
   el('rect', { x: dx - w / 2 - 9, y: -12, width: w + 18, height: 24, rx: 12, fill: R.col, stroke: 'var(--bg)', 'stroke-width': 2 }, g);
   g.insertBefore(g.lastChild, t);
 }
-for (const k in ROADS) { tag(ROADS[k], ROADS[k].tag); if (ROADS[k].tag2) tag(ROADS[k], ROADS[k].tag2); }
+// Key (legend) in the lower-left corner instead of names on the lines: equal-width name plates on a line 20% wider
+(function key() {
+  const rows = [['chalk'], ['drive'], ['ride'], ['hogwood'], ['lane'], ['ibl'], ['main', 'Loxwood Road'], ['main', 'Plaistow Road'],
+    ['poundfield'], ['forestry']];
+  const PW = 150, LW = PW * 1.2, X = 52, Y0 = 905, DY = 31;
+  const g = el('g', { class: 'key', 'aria-label': 'Key to road colours' }, gTags);
+  const head = el('text', { x: X, y: Y0 - 32, 'dominant-baseline': 'central', class: 'lbl', 'font-size': 19 }, g);
+  head.textContent = 'Key';
+  rows.forEach(([k, label], i) => {
+    const R = ROADS[k], y = Y0 + i * DY, cx = X + LW / 2, col = label === 'Loxwood Road' ? R.col1 : R.col;
+    if (R.pill) {
+      el('line', { x1: X, y1: y, x2: X + LW, y2: y, stroke: 'var(--station-ring)', 'stroke-width': 16 }, g);
+      el('line', { x1: X, y1: y, x2: X + LW, y2: y, stroke: 'var(--station-fill)', 'stroke-width': 6 }, g);
+    } else {
+      el('line', { x1: X, y1: y, x2: X + LW, y2: y, stroke: col, 'stroke-width': 12 }, g);
+      if (R.dbl) el('line', { x1: X, y1: y, x2: X + LW, y2: y, stroke: 'var(--bg)', 'stroke-width': 5 }, g);
+    }
+    el('rect', { x: cx - PW / 2, y: y - 12, width: PW, height: 24, rx: 12, fill: col, stroke: 'var(--bg)', 'stroke-width': 2 }, g);
+    const t = el('text', { x: cx, y: y + 1, 'text-anchor': 'middle', 'dominant-baseline': 'central', class: 'road-tag', fill: R.tagInk }, g);
+    t.textContent = label || R.name;
+  });
+})();
 
 /* position of a record on the drawn map */
 function place(r) {
@@ -626,7 +672,7 @@ for (const r of recs) r.pt = place(r);
 
 /* ---------- view box: pan / zoom ---------- */
 const wrap = document.getElementById('wrap');
-const FULL = { x: 40, y: 95, w: 980, h: 1180 };
+const FULL = { x: 40, y: 95, w: 980, h: 1190 };
 let vb = { ...FULL }, anim = 0;
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 function apply() { svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`); }
@@ -712,7 +758,7 @@ const $q = document.getElementById('q'), $res = document.getElementById('res'), 
 const $sheet = document.getElementById('sheet'), $card = document.getElementById('card'), $clr = document.getElementById('clr');
 let hits = [], sel = null, fromList = false, listOpen = true;
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const colOf = r => { const c = ROADS[r.road].col; return c.startsWith('var') ? 'var(--fg)' : c; };
+const colOf = r => { const c = colAt(ROADS[r.road], r.s); return c.startsWith('var') ? 'var(--fg)' : c; };
 const ord = n => n + (n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th');
 const metres = m => m < 15 ? 'just past' : 'about ' + (Math.round(m / 10) * 10) + ' m after';
 
@@ -815,7 +861,7 @@ function renderSel() {
   // highlight the stretch between the neighbouring side roads
   const s0 = F.prev ? F.prev.s : 0, s1 = F.next ? F.next.s : R.g.L;
   const stretch = slice(R.s, R.map(s0), R.map(s1));
-  el('path', { d: dstr(stretch), fill: 'none', stroke: R.col, 'stroke-opacity': 0.32, 'stroke-width': 34, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, gHi);
+  el('path', { d: dstr(stretch), fill: 'none', stroke: colAt(R, r.s), 'stroke-opacity': 0.32, 'stroke-width': 34, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, gHi);
   // big station marker joined to the road on the correct side
   const p = r.pt, base = at(R.s, R.map(r.s));
   el('line', { x1: base.x, y1: base.y, x2: p.x, y2: p.y, stroke: 'var(--station-ring)', 'stroke-width': 6 }, gSel);
@@ -830,7 +876,7 @@ function renderSel() {
   const b = minSize(bbox(pts), WIDE.matches ? 520 : 300);
   gBase.classList.add('dim');
   // card
-  const pill = `<span class="pill" style="background:${R.col};color:${R.tagInk}">${esc(r.roadName)}</span>`;
+  const pill = `<span class="pill" style="background:${colAt(R, r.s)};color:${R.tagInk}">${esc(r.roadName)}</span>`;
   const setback = !r.spur && r.off > 55 ? `<div class="note">Set back about ${Math.round(r.off / 10) * 10} m from the road. Look for a driveway.</div>` : '';
   $card.innerHTML = `<div class="cardtop"><h2>${esc(r.label)}</h2><button class="x" type="button" id="x" aria-label="Close directions">×</button></div>
     <div class="where">${pill}<span>${esc(where(r).replace(' of ' + r.roadName, '').replace(', off ' + r.roadName, ''))}</span>${r.pc.startsWith('RH') ? `<span>${esc(r.pc)}</span>` : ''}</div>
