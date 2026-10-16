@@ -81,12 +81,15 @@ svg#map.drag{cursor:grabbing}
 .zoom{position:absolute;right:max(12px,env(safe-area-inset-right,0px));top:12px;display:flex;flex-direction:column;gap:6px;z-index:3}
 .zoom button{width:40px;height:40px;border-radius:10px;border:1px solid var(--rule);background:var(--bg);color:var(--fg);font:inherit;font-size:20px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .zoom button:hover{border-color:var(--fg)}
+.zoom svg{display:block;margin:auto}
 .sheet{position:absolute;left:0;right:0;bottom:0;z-index:4;padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));padding-bottom:max(12px,env(safe-area-inset-bottom,0px));pointer-events:none}
 .card{pointer-events:auto;max-width:640px;margin:0 auto;background:var(--bg);border:2px solid var(--fg);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 8px 28px rgba(0,0,0,.18);max-height:52vh;overflow:auto}
-.card h2{margin:0;font-weight:600;font-size:22px;line-height:1.1;color:var(--ink);text-wrap:balance}
+.cardtop{display:flex;align-items:flex-start;gap:8px}
+.x{flex:none;margin:-6px -8px 0 auto;width:36px;height:36px;border-radius:50%;border:0;background:var(--panel);color:var(--fg);font-size:22px;line-height:1;cursor:pointer}
+.x:hover{background:var(--rule)}
+.card h2{margin:0;font-weight:600;font-size:20px;line-height:1.1;color:var(--ink);text-wrap:balance}
 .card .where{font-size:15px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
 .pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:14px;line-height:1.4}
-.dirs{display:grid;gap:8px}
 .dir{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:center;padding:8px 10px;border-radius:10px;background:var(--panel)}
 .side{grid-row:span 2;font-family:var(--font-display);font-size:22px;letter-spacing:.04em;width:92px;text-align:center;padding:8px 0;border-radius:8px;color:var(--bg)}
 .side.L{background:var(--left)} .side.R{background:var(--right)}
@@ -94,8 +97,7 @@ svg#map.drag{cursor:grabbing}
 .dir .body{font-size:16px;line-height:1.3}
 .dir .body b{font-weight:600;color:var(--ink)}
 .note{font-size:13px;color:var(--muted)}
-.closebtn{align-self:flex-end;margin-top:-6px;font:inherit;font-size:14px;border:0;background:none;color:var(--muted);cursor:pointer;text-decoration:underline}
-@media (max-width:520px){.card{padding:12px 12px;gap:8px;max-height:56%}.card h2{font-size:22px}.side{width:66px;font-size:16px;padding:6px 0}.dir{padding:7px 8px;gap:2px 10px}.dir .body{font-size:15px}.dir .head{font-size:13px}}
+@media (max-width:520px){.search input{font-size:16px;padding:9px 38px 9px 14px}.meta,.chip{font-size:13px}.results .nm{font-size:15px}.results .sub,.results .pc{font-size:12px}.results li button{padding:7px 12px}.card{padding:10px 12px;gap:6px;max-height:46%;border-radius:14px}.card h2{font-size:17px}.card .where,.pill{font-size:13px}.side{width:62px;font-size:15px;padding:6px 0}.dir{padding:7px 8px;gap:2px 10px}.dir .body{font-size:15px}.dir .head{font-size:12px}.note{font-size:12px}}
 @media (min-width:860px){
   .app{flex-direction:row}
   .mapwrap{order:1;flex:1}
@@ -123,9 +125,8 @@ svg#map.drag{cursor:grabbing}
   <div class="panel">
     <header>
       <div class="bar">
-        <svg class="roundel" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="14" fill="none" stroke="var(--roundel)" stroke-width="7"/><rect x="1" y="16" width="38" height="8" fill="#0019a8"/></svg>
         <form class="search" id="f" autocomplete="off" role="search">
-          <input id="q" type="search" inputmode="search" placeholder="House name, road or postcode" aria-label="Search Ifold addresses" enterkeyhint="search" spellcheck="false" autocapitalize="off">
+          <input id="q" type="search" inputmode="search" placeholder="House, road or postcode" aria-label="Search Ifold addresses" enterkeyhint="search" spellcheck="false" autocapitalize="off">
           <button type="button" class="clear" id="clr" aria-label="Clear search" hidden>×</button>
         </form>
       </div>
@@ -136,7 +137,7 @@ svg#map.drag{cursor:grabbing}
   </div>
   <div class="mapwrap" id="wrap">
     <svg id="map" xmlns="http://www.w3.org/2000/svg" aria-label="Ifold Estate road map in the style of the London Underground"></svg>
-    <div class="zoom"><button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">−</button><button id="zfit" aria-label="Show whole map" style="font-size:15px">⤢</button></div>
+    <div class="zoom"><button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">−</button><button id="zfit" aria-label="Show whole map"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg></button></div>
     <div class="attrib">Road geometry © OpenStreetMap contributors</div>
   </div>
 </div>
@@ -333,18 +334,18 @@ const ROADS = {
     tag: { x: 420, y: 662, rot: 45 } },
   lane: { name: 'The Lane', col: 'var(--track-black)', tagInk: 'var(--bg)', geo: rev(GEO_ROADS.lane), r: 18,
     sch: [[606, 453], [580, 453], [555, 428], [555, 248], [310, 248], [310, 175]],
-    anchors: [[[51.073167, -0.537848], [555, 398]], [[51.075829, -0.53886], [555, 308]], [[51.076053, -0.539127], [555, 248]], [[51.075463, -0.541479], [310, 248]]],
+    anchors: [[[51.073167, -0.537848], [555, 398]], ['The Olde Garden', [555, 366]], [[51.075829, -0.53886], [555, 290]], [[51.076053, -0.539127], [555, 248]], [[51.075463, -0.541479], [310, 248]]],
     dirs: ['Heading north from Chalk Road', 'Heading south towards Chalk Road'],
     bends: [[[51.076053, -0.539127], 'the bend by Lakeside'], [[51.075463, -0.541479], 'the sharp corner']],
     tag: { x: 432, y: 248, rot: 0 } },
   ibl: { name: 'Ifold Bridge Lane', col: '#B36305', tagInk: '#fff', geo: GEO_ROADS.ibl, r: 30,
-    sch: [[555, 308], [640, 223], [700, 223], [775, 298]], anchors: [],
+    sch: [[555, 290], [740, 105], [888, 253]], anchors: [[[51.077908, -0.536658], [740, 105]]],
     dirs: ['Heading east from The Lane', 'Heading west towards The Lane'],
-    tag: { x: 790, y: 320, rot: 0, anchor: 'start' } },
+    tag: { x: 648, y: 197, rot: -45 } },
   hogwood: { name: 'Hogwood Road', col: '#0098D4', tagInk: '#fff', geo: GEO_ROADS.hogwood, r: 0,
-    sch: [[555, 398], [285, 398]], anchors: [['Pannells Ash', [440, 398]]],
+    sch: [[555, 398], [330, 398]], anchors: [['Pannells Ash', [362, 398]]],
     dirs: ['Heading west from The Lane', 'Heading east towards The Lane'],
-    tag: { x: 357, y: 398, rot: 0 } },
+    tag: { x: 458, y: 398, rot: 0 } },
   close: { name: 'The Close', col: 'var(--track-black)', tagInk: 'var(--bg)', geo: GEO_ROADS.close, r: 0, pill: true,
     sch: [[751, 858], [686, 858]], anchors: [[[51.069346, -0.538352], [693, 858]]],
     dirs: ['Heading west, in from The Drive', 'Heading east, back towards The Drive'],
@@ -376,13 +377,13 @@ const JUNCTIONS = [
   ['lane', 'ibl', [51.075829, -0.53886]], ['lane', 'forestry', [51.077763, -0.544956]], ['ride', 'main', [51.069941, -0.547003]],
   ['main', 'poundfield', [51.069941, -0.547003]], ['main', 'forestry', [51.069915, -0.547992]], ['close', 'wych', [51.069346, -0.538352]],
 ];
-const INTERCHANGES = [[606, 453], [555, 398], [555, 308], [468, 710], [751, 993], [330, 848], [751, 1220], [250, 600], [175, 600], [310, 175]];
+const INTERCHANGES = [[606, 453], [555, 398], [555, 290], [468, 710], [751, 993], [330, 848], [751, 1220], [250, 600], [175, 600], [310, 175]];
 const LABEL_AT = {
   'Thistledown Vale': [776, 449, 'start'], 'Loxmeadow Close': [776, 494, 'start'], 'Oakdene Place': [776, 540, 'start'],
   'Hawthorn Close': [776, 632, 'start'], 'Springfields Close': [776, 734, 'start'], 'Wildacre Close': [776, 775, 'start'],
   'Birchwood Close': [776, 819, 'start'], 'Oak Way': [776, 899, 'start'], 'Woodland Copse': [776, 1032, 'start'],
   'Simmons Place': [776, 1078, 'start'], 'Chequer Close': [690, 970, 'end'], 'Mill House': [410, 786, 'start'],
-  'Kelsey Hall': [536, 600, 'end'], 'Sycamore Close': [578, 518, 'end'], 'Pannells Ash': [440, 446, 'middle'],
+  'Kelsey Hall': [536, 600, 'end'], 'Sycamore Close': [578, 518, 'end'], 'Pannells Ash': [362, 446, 'middle'],
 };
 
 /* build road geometry */
@@ -458,6 +459,39 @@ for (const k in ROADS) {
   }
   ROADS[k].marks = out;
 }
+
+/* which way does a driver coming from Ifold Stores (south end of The Drive) travel along each road? shortest route over the junctions */
+const NODES = {};
+for (const [a, b, g] of JUNCTIONS) {
+  const key = g.join(','), n = NODES[key] || (NODES[key] = { key, on: {} });
+  n.on[a] = project(ROADS[a].g, xy(g)).s; n.on[b] = project(ROADS[b].g, xy(g)).s;
+}
+const DIST = (function () {
+  const keys = Object.keys(NODES), dist = {}, done = new Set();
+  keys.forEach(k => dist[k] = Infinity);
+  dist['51.064054,-0.530882'] = 0;
+  while (done.size < keys.length) {
+    let u = null; for (const k of keys) if (!done.has(k) && (u === null || dist[k] < dist[u])) u = k;
+    if (u === null || dist[u] === Infinity) break;
+    done.add(u);
+    for (const road in NODES[u].on) for (const v of keys) {
+      if (v === u || NODES[v].on[road] == null) continue;
+      const d = dist[u] + Math.abs(NODES[v].on[road] - NODES[u].on[road]);
+      if (d < dist[v]) dist[v] = d;
+    }
+  }
+  return dist;
+})();
+function approachFwd(r) {
+  let best = null;
+  for (const k in NODES) {
+    const sj = NODES[k].on[r.road]; if (sj == null || DIST[k] === Infinity) continue;
+    const d = DIST[k] + Math.abs(r.s - sj);
+    if (!best || d < best.d) best = { d, fwd: sj <= r.s };
+  }
+  return best ? best.fwd : true;
+}
+const COMPASS = ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'];
 
 /* assign every record to a road (or a close/drive off one) */
 const family = k => Object.keys(ROADS).filter(r => { for (let x = r; x; x = PARENT[x]) if (x === k) return true; return false; });
@@ -758,24 +792,26 @@ function leg(r, fwd) {
     }
     nth = keys.size || null;
   }
-  return { side, prev, next, dist: prev ? Math.abs(s - prev.s) : null, nth, head: R.dirs[fwd ? 0 : 1] };
+  const q = at(R.g, s), ang = (Math.atan2(q.dx * sgn, q.dy * sgn) * 180 / Math.PI + 360) % 360;
+  return { side, prev, next, dist: prev ? Math.abs(s - prev.s) : null, nth, heading: COMPASS[Math.round(ang / 45) % 8] };
 }
 function legHTML(r, L) {
   const sideW = L.side === 'L' ? 'left' : 'right';
   const after = L.prev ? `${metres(L.dist)} <b>${esc(L.prev.name)}</b>` : 'near the start of the road';
   const before = L.next ? `before <b>${esc(L.next.name)}</b>` : 'before the end of the road';
   let body;
-  if (r.spur && r.spur.name) body = `Turn ${sideW} into <b>${esc(r.spur.name)}</b>${L.prev ? ', ' + after : ''}.`;
-  else if (r.spur) body = `Private drive on your ${sideW}, ${after}, ${before}.${r.spur.n > 1 ? ` Shared by ${r.spur.n} homes.` : ''}`;
-  else body = `On your ${sideW}, ${after}, ${before}.${L.nth ? ` Roughly the ${ord(L.nth)} house on that side after ${esc(L.prev.name)}.` : ''}`;
-  return `<div class="dir"><div class="side ${L.side}">${L.side === 'L' ? 'LEFT' : 'RIGHT'}</div><div class="head">${esc(L.head)}</div><div class="body">${body}</div></div>`;
+  const inSide = r.spur ? (r.inSide > 0 ? 'left' : 'right') : '', inM = r.spur ? Math.max(10, Math.round(r.in / 10) * 10) : 0;
+  if (r.spur && r.spur.name) body = `Turn ${sideW} into <b>${esc(r.spur.name)}</b>${L.prev ? ', ' + after : ''}. The house is on your ${inSide}, about ${inM} m in.`;
+  else if (r.spur) body = `Private drive on your ${sideW}, ${after}, ${before}. The house is on your ${inSide}, about ${inM} m down${r.spur.n > 1 ? ` (${r.spur.n} homes share it)` : ''}.`;
+  else body = `On your ${sideW}, ${after}, ${before}.${L.nth ? ` About the ${ord(L.nth)} house on that side.` : ''}`;
+  return `<div class="dir"><div class="side ${L.side}">${L.side === 'L' ? 'LEFT' : 'RIGHT'}</div><div class="head">From Ifold Stores, heading ${L.heading} on ${esc(r.roadName)}</div><div class="body">${body}</div></div>`;
 }
 
 function renderSel() {
   gSel.innerHTML = ''; gHi.innerHTML = '';
   if (!sel) { $sheet.hidden = true; gBase.classList.remove('dim'); return; }
   const r = sel, R = ROADS[r.road];
-  const F = leg(r, true), B = leg(r, false);
+  const F = leg(r, approachFwd(r));
   // highlight the stretch between the neighbouring side roads
   const s0 = F.prev ? F.prev.s : 0, s1 = F.next ? F.next.s : R.g.L;
   const stretch = slice(R.s, R.map(s0), R.map(s1));
@@ -795,12 +831,10 @@ function renderSel() {
   gBase.classList.add('dim');
   // card
   const pill = `<span class="pill" style="background:${R.col};color:${R.tagInk}">${esc(r.roadName)}</span>`;
-  const inner = r.spur ? `<div class="note">${r.spur.name ? `Inside ${esc(r.spur.name)}` : 'Down the drive'}, the house is on your <b>${r.inSide > 0 ? 'left' : 'right'}</b> as you drive in, about ${Math.max(10, Math.round(r.in / 10) * 10)} m from ${esc(r.roadName)}.</div>` : '';
   const setback = !r.spur && r.off > 55 ? `<div class="note">Set back about ${Math.round(r.off / 10) * 10} m from the road. Look for a driveway.</div>` : '';
-  $card.innerHTML = `<button class="closebtn" type="button" id="x">Close</button>
-    <h2>${esc(r.label)}</h2>
+  $card.innerHTML = `<div class="cardtop"><h2>${esc(r.label)}</h2><button class="x" type="button" id="x" aria-label="Close directions">×</button></div>
     <div class="where">${pill}<span>${esc(where(r).replace(' of ' + r.roadName, '').replace(', off ' + r.roadName, ''))}</span>${r.pc.startsWith('RH') ? `<span>${esc(r.pc)}</span>` : ''}</div>
-    <div class="dirs">${legHTML(r, F)}${legHTML(r, B)}</div>${inner}${setback}`;
+    ${legHTML(r, F)}${setback}`;
   $sheet.hidden = false;
   go(fitInto(b, 30, WIDE.matches ? 0 : $sheet.offsetHeight + 8)); // keep the station clear of the card on phones
   document.getElementById('x').onclick = () => { if (fromList) { sel = null; renderAll(); } else clearAll(); };
