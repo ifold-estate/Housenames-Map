@@ -533,7 +533,7 @@ const gHi = el('g', {}, svg), gBase = el('g', { id: 'base' }, svg), gTags = el('
 
 // roundel
 (function () {
-  const g = el('g', { transform: 'translate(470 1188)', 'aria-hidden': 'true' }, gBase);
+  const g = el('g', { transform: 'translate(482 110) scale(0.78)', 'aria-hidden': 'true' }, gBase);
   el('circle', { r: 66, fill: 'none', stroke: '#DC241F', 'stroke-width': 26 }, g);
   el('rect', { x: -150, y: -27, width: 300, height: 54, fill: '#0019A8', stroke: 'var(--bg)', 'stroke-width': 3 }, g);
   const t = el('text', { x: 0, y: 1, 'text-anchor': 'middle', 'dominant-baseline': 'central', fill: '#fff', 'font-size': 36, 'font-family': 'var(--font-display)', 'letter-spacing': 1 }, g);
@@ -672,7 +672,7 @@ for (const r of recs) r.pt = place(r);
 
 /* ---------- view box: pan / zoom ---------- */
 const wrap = document.getElementById('wrap');
-const FULL = { x: 40, y: 95, w: 980, h: 1190 };
+const FULL = { x: 40, y: 40, w: 980, h: 1245 };
 let vb = { ...FULL }, anim = 0;
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 function apply() { svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`); }
