@@ -493,10 +493,27 @@ for (const [a, b, g] of JUNCTIONS) {
   const key = g.join(','), n = NODES[key] || (NODES[key] = { key, on: {} });
   n.on[a] = project(ROADS[a].g, xy(g)).s; n.on[b] = project(ROADS[b].g, xy(g)).s;
 }
-const DIST = (function () {
+/* Starting points for directions: the nearest (by road) of these well-known spots.
+   Houses on Hogwood Road, The Lane and Ifold Bridge Lane always start from Ifold Motors. */
+const STARTS = [
+  { id: 'shop', name: 'the shop (Ifold Stores)', road: 'drive', g: [51.064054, -0.530882] },
+  { id: 'bus', name: 'the Chalk Road bus stop', road: 'chalk', g: [51.06814, -0.54398] },
+  { id: 'ride', name: 'The Ride entrance at Loxwood Road', road: 'ride', g: [51.069941, -0.547003] },
+  { id: 'rd', name: 'The Ride / The Drive junction', road: 'drive', g: [51.066646, -0.535049] },
+  { id: 'hall', name: 'Kelsey Hall', road: 'chalk', g: [51.07067, -0.539113] },
+  { id: 'garage', name: 'Ifold Motors (the garage)', road: 'hogwood', g: [51.073273, -0.5382396] },
+];
+const GARAGE_ROADS = new Set(['hogwood', 'lane', 'ibl']);
+for (const st of STARTS) { // make each start a node on its road
+  const key = 'start:' + st.id;
+  NODES[key] = NODES[key] || { key, on: {} };
+  NODES[key].on[st.road] = project(ROADS[st.road].g, xy(st.g)).s;
+  st.key = key;
+}
+function dijkstra(src) {
   const keys = Object.keys(NODES), dist = {}, done = new Set();
   keys.forEach(k => dist[k] = Infinity);
-  dist['51.064054,-0.530882'] = 0;
+  dist[src] = 0;
   while (done.size < keys.length) {
     let u = null; for (const k of keys) if (!done.has(k) && (u === null || dist[k] < dist[u])) u = k;
     if (u === null || dist[u] === Infinity) break;
@@ -508,15 +525,18 @@ const DIST = (function () {
     }
   }
   return dist;
-})();
-function approachFwd(r) {
+}
+for (const st of STARTS) st.dist = dijkstra(st.key);
+// nearest start by road, and which way along the house's road the driver is then travelling
+function approach(r) {
+  const starts = GARAGE_ROADS.has(r.road) ? STARTS.filter(st => st.id === 'garage') : STARTS.filter(st => st.id !== 'garage');
   let best = null;
-  for (const k in NODES) {
-    const sj = NODES[k].on[r.road]; if (sj == null || DIST[k] === Infinity) continue;
-    const d = DIST[k] + Math.abs(r.s - sj);
-    if (!best || d < best.d) best = { d, fwd: sj <= r.s };
+  for (const st of starts) for (const k in NODES) {
+    const sj = NODES[k].on[r.road]; if (sj == null || st.dist[k] === Infinity) continue;
+    const d = st.dist[k] + Math.abs(r.s - sj);
+    if (!best || d < best.d) best = { d, fwd: sj <= r.s, start: st };
   }
-  return best ? best.fwd : true;
+  return best || { fwd: true, start: STARTS[0] };
 }
 const COMPASS = ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'];
 
@@ -816,6 +836,12 @@ function search(q) {
     if (r.icon !== 'House') sc -= 3;
     out.push({ r, sc });
   }
+  // several words: if they appear together as a phrase anywhere ("The Close", "Oak Way"), show only those
+  // matches, so "the" and "close" aren't matched separately across every other close
+  if (toks.length > 1) {
+    const phrase = out.filter(o => (' ' + o.r.hay).includes(' ' + nq));
+    if (phrase.length) out.splice(0, out.length, ...phrase);
+  }
   out.sort((a, b) => b.sc - a.sc || a.r.label.localeCompare(b.r.label, 'en', { numeric: true }));
   return out.map(o => o.r);
 }
@@ -830,7 +856,7 @@ const ord = n => n + (n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n 
 const metres = m => m < 15 ? 'just past' : 'about ' + (Math.round(m / 10) * 10) + ' m after';
 
 function where(r) {
-  return r.spur ? (r.spur.name ? `In ${r.spur.name}, off ${r.roadName}` : `Private drive off ${r.roadName}, ${r.compass} side`) : `${cap(r.compass)} side of ${r.roadName}`;
+  return r.spur ? (r.spur.name ? `In ${r.spur.name}, off ${r.roadName}` : `Driveway off ${r.roadName}, ${r.compass} side`) : `${cap(r.compass)} side of ${r.roadName}`;
 }
 const cap = s => s[0].toUpperCase() + s.slice(1);
 
@@ -936,9 +962,9 @@ function legHTML(r, L) {
   let body;
   const inSide = r.spur ? (r.inSide > 0 ? 'left' : 'right') : '', inM = r.spur ? Math.max(10, Math.round(r.in / 10) * 10) : 0;
   if (r.spur && r.spur.name) body = `Turn ${sideW} into <b>${esc(r.spur.name)}</b>${L.prev ? ', ' + after : ''}. The house is on your ${inSide}, about ${inM} m in.`;
-  else if (r.spur) body = `Private drive on your ${sideW}, ${after}, ${before}. The house is on your ${inSide}, about ${inM} m down${r.spur.n > 1 ? ` (${r.spur.n} homes share it)` : ''}.`;
+  else if (r.spur) body = `Driveway on your ${sideW}, ${after}, ${before}. The house is on your ${inSide}, about ${inM} m down${r.spur.n > 1 ? ` (${r.spur.n} homes share it)` : ''}.`;
   else body = `On your ${sideW}, ${after}, ${before}.${L.nth ? ` About the ${ord(L.nth)} house on that side.` : ''}`;
-  return `<div class="dir"><div class="side ${L.side}">${L.side === 'L' ? 'LEFT' : 'RIGHT'}</div><div class="head">From Ifold Stores, heading ${L.heading} on ${esc(r.roadName)}</div><div class="body">${body}</div></div>`;
+  return `<div class="dir"><div class="side ${L.side}">${L.side === 'L' ? 'LEFT' : 'RIGHT'}</div><div class="head">From ${esc(L.start.name)}, heading ${L.heading} on ${esc(r.roadName)}</div><div class="body">${body}</div></div>`;
 }
 
 /* hand the exact spot to a navigation app, on foot where the app supports it (many of the lanes are footpaths or bridleways) */
@@ -971,7 +997,7 @@ function renderSel() {
   gSel.innerHTML = ''; gHi.innerHTML = '';
   if (!sel) { $sheet.hidden = true; gBase.classList.remove('dim'); return; }
   const r = sel, R = ROADS[r.road];
-  const F = leg(r, approachFwd(r));
+  const A = approach(r), F = leg(r, A.fwd); F.start = A.start;
   // highlight the stretch between the neighbouring side roads
   const s0 = F.prev ? F.prev.s : 0, s1 = F.next ? F.next.s : R.g.L;
   const stretch = slice(R.s, R.map(s0), R.map(s1));
