@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>:root{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
-<title>Ifold Underground</title>
+<title>Ifold Tube Map</title>
 <style>
 @font-face{font-family:"Hammersmith One";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/hammersmith-one-latin-ext-400-normal.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
 @font-face{font-family:"Hammersmith One";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/hammersmith-one-latin-400-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
@@ -97,6 +97,13 @@ svg#map.drag{cursor:grabbing}
 .dir .body{font-size:16px;line-height:1.3}
 .dir .body b{font-weight:600;color:var(--ink)}
 .note{font-size:13px;color:var(--muted)}
+.nav{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--rule);padding-top:8px}
+.navhead{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.navbtns{display:flex;flex-wrap:wrap;gap:6px}
+.navbtn{font:inherit;font-size:14px;line-height:1.2;padding:7px 12px;border-radius:999px;border:1px solid var(--rule);background:var(--panel);color:var(--fg);text-decoration:none;cursor:pointer;user-select:text}
+.navbtn:hover{border-color:var(--fg)}
+.navbtn.pref{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.navbtn small{font-size:11px;opacity:.75}
 @media (max-width:520px){.search input{font-size:16px;padding:9px 38px 9px 14px}.meta,.chip{font-size:13px}.results .nm{font-size:15px}.results .sub,.results .pc{font-size:12px}.results li button{padding:7px 12px}.card{padding:10px 12px;gap:6px;max-height:46%;border-radius:14px}.card h2{font-size:17px}.card .where,.pill{font-size:13px}.side{width:62px;font-size:15px;padding:6px 0}.dir{padding:7px 8px;gap:2px 10px}.dir .body{font-size:15px}.dir .head{font-size:12px}.note{font-size:12px}}
 @media (min-width:860px){
   .app{flex-direction:row}
@@ -921,6 +928,32 @@ function legHTML(r, L) {
   return `<div class="dir"><div class="side ${L.side}">${L.side === 'L' ? 'LEFT' : 'RIGHT'}</div><div class="head">From Ifold Stores, heading ${L.heading} on ${esc(r.roadName)}</div><div class="body">${body}</div></div>`;
 }
 
+/* hand the exact spot to a navigation app, on foot where the app supports it (many of the lanes are footpaths or bridleways) */
+const APPS = {
+  google: { name: 'Google Maps', url: (la, lo) => `https://www.google.com/maps/dir/?api=1&destination=${la},${lo}&travelmode=walking` },
+  apple: { name: 'Apple Maps', url: (la, lo) => `https://maps.apple.com/?daddr=${la},${lo}&dirflg=w` },
+  waze: { name: 'Waze', note: 'driving only', url: (la, lo) => `https://waze.com/ul?ll=${la},${lo}&navigate=yes` },
+};
+const isApple = /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
+let navPref = null;
+try { navPref = localStorage.getItem('ifold-nav'); } catch (e) {}
+function navHTML(r) {
+  const order = Object.keys(APPS).sort((a, b) => (b === navPref) - (a === navPref) || (isApple ? (b === 'apple') - (a === 'apple') : (a === 'apple') - (b === 'apple')));
+  const la = r.lat.toFixed(6), lo = r.lng.toFixed(6);
+  return `<div class="nav"><span class="navhead">Walking directions to this spot</span><div class="navbtns">`
+    + order.map(k => `<a class="navbtn${k === navPref ? ' pref' : ''}" data-app="${k}" href="${APPS[k].url(la, lo)}" target="_blank" rel="noopener">${APPS[k].name}${APPS[k].note ? ` <small>(${APPS[k].note})</small>` : ''}</a>`).join('')
+    + `<button class="navbtn" type="button" id="copyll" data-ll="${la}, ${lo}">Copy location</button></div></div>`;
+}
+$card.addEventListener('click', e => {
+  const a = e.target.closest('a.navbtn');
+  if (a) { navPref = a.dataset.app; try { localStorage.setItem('ifold-nav', navPref); } catch (err) {} return; }
+  const c = e.target.closest('#copyll');
+  if (c) {
+    const done = () => { c.textContent = 'Copied ' + c.dataset.ll; };
+    try { navigator.clipboard.writeText(c.dataset.ll).then(done, () => { c.textContent = c.dataset.ll; }); } catch (err) { c.textContent = c.dataset.ll; }
+  }
+});
+
 function renderSel() {
   gSel.innerHTML = ''; gHi.innerHTML = '';
   if (!sel) { $sheet.hidden = true; gBase.classList.remove('dim'); return; }
@@ -937,9 +970,12 @@ function renderSel() {
     route = [[base.x, base.y]].concat(slice(r.spur.g, 0, Math.max(1, r.in)).map(P => { const q = r.spur.toSch(P); return [q.x, q.y]; }), [[p.x, p.y]]);
     el('path', { d: dstr(route), fill: 'none', stroke: 'var(--station-ring)', 'stroke-width': 3.5, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-dasharray': '0.1 8' }, gSel);
   } else el('line', { x1: base.x, y1: base.y, x2: p.x, y2: p.y, stroke: 'var(--station-ring)', 'stroke-width': 6 }, gSel);
-  el('circle', { cx: p.x, cy: p.y, r: 13, fill: 'var(--station-fill)', stroke: 'var(--station-ring)', 'stroke-width': 6 }, gSel);
-  const horiz = Math.abs(p.nx) > 0.35, anchor = horiz ? (p.nx > 0 ? 'start' : 'end') : 'middle';
-  const lx = p.x + p.nx * 24, ly = p.y + p.ny * 24 + (horiz ? 0 : (p.ny > 0 ? 14 : -14));
+  // red map pin with its tip on the house
+  const pin = el('g', { transform: `translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})` }, gSel);
+  el('path', { d: 'M0 0C-3 -9 -15 -17 -15 -29A15 15 0 1 1 15 -29C15 -17 3 -9 0 0Z', fill: '#EA4335', stroke: '#A50E0E', 'stroke-width': 2 }, pin);
+  el('circle', { cx: 0, cy: -29, r: 5.5, fill: '#A50E0E' }, pin);
+  const anchor = p.nx < -0.35 ? 'end' : 'start';
+  const lx = p.x + (anchor === 'end' ? -22 : 22), ly = p.y - 29;
   const t = el('text', { x: lx, y: ly, 'text-anchor': anchor, 'dominant-baseline': 'central', 'font-size': 30, class: 'lbl', style: 'stroke-width:7px' }, gSel);
   t.textContent = r.label;
   for (const n of gSel.children) n.style.cursor = 'pointer';
@@ -954,7 +990,7 @@ function renderSel() {
   const setback = !r.spur && r.off > 55 ? `<div class="note">Set back about ${Math.round(r.off / 10) * 10} m from the road. Look for a driveway.</div>` : '';
   $card.innerHTML = `<div class="cardtop"><h2>${esc(r.label)}</h2><button class="x" type="button" id="x" aria-label="Close directions">×</button></div>
     <div class="where">${pill}<span>${esc(where(r).replace(' of ' + r.roadName, '').replace(', off ' + r.roadName, ''))}</span>${r.pc.startsWith('RH') ? `<span>${esc(r.pc)}</span>` : ''}</div>
-    ${legHTML(r, F)}${setback}`;
+    ${legHTML(r, F)}${setback}${navHTML(r)}`;
   $sheet.hidden = !cardOpen;
   go(fitInto(b, 30, WIDE.matches || !cardOpen ? 0 : $sheet.offsetHeight + 8)); // keep the station clear of the card on phones
   document.getElementById('x').onclick = () => { cardOpen = false; renderMeta(); renderSel(); };
