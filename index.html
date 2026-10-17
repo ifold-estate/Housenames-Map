@@ -1070,8 +1070,143 @@ vb = fitBox(FULL, 0); apply();
 // ?search=house links from the old search.ifold.estate site keep working
 let h = '';
 try { h = new URLSearchParams(location.search).get('search') || ''; } catch (e) {}
-if (!h) h = decodeURIComponent(location.hash.slice(1)).replace(/[._~-]/g, ' ');
+if (!h && location.hash !== '#halloween') h = decodeURIComponent(location.hash.slice(1)).replace(/[._~-]/g, ' ');
 if (h) { $q.value = h; run(); } else renderAll();
+
+/* ---------- Halloween: three ghosts chase a "20 mph" Pac-Man round the roads (29 Oct – 2 Nov, or ?halloween / #halloween) ---------- */
+(function halloween() {
+  const now = new Date(), hw = new Date(now.getFullYear(), 9, 31), day = Math.floor((now - hw) / 86400000);
+  const forced = /(^|[?&])halloween\b/.test(location.search) || location.hash === '#halloween';
+  if (!forced && !(day >= -2 && day <= 2)) return;
+
+  // road network on the drawn map: junction positions along each road
+  const NET = {}, NODEXY = {};
+  for (const k in NODES) {
+    if (k.startsWith('start:')) continue;
+    for (const road in NODES[k].on) {
+      const R = ROADS[road], ss = R.map(NODES[k].on[road]);
+      (NET[road] = NET[road] || []).push({ s: ss, node: k });
+      if (!NODEXY[k]) { const q = at(R.s, ss); NODEXY[k] = [q.x, q.y]; }
+    }
+  }
+  for (const r in NET) NET[r].sort((a, b) => a.s - b.s);
+  const roadsAt = node => Object.keys(NODES[node].on).filter(r => NET[r]).map(r => ({ road: r, s: NET[r].find(j => j.node === node).s }));
+
+  const gFun = el('g', { 'pointer-events': 'none', 'aria-hidden': 'true' });
+  svg.insertBefore(gFun, gSel);
+  const hello = el('text', { x: 482, y: 205, 'text-anchor': 'middle', 'font-size': 26, class: 'lbl', style: 'fill:#EE7C0E' }, gBase);
+  hello.textContent = 'Happy Halloween';
+
+  // characters
+  const PAC_V = 52, GHOST_V = 60;
+  const mk = (road, s, dir, v, kind, col) => ({ road, s, dir, v, base: v, kind, col, cool: 0, last: null });
+  const pac = mk('drive', ROADS.drive.s.L * 0.45, 1, PAC_V, 'pac');
+  const ghosts = [
+    mk('forestry', ROADS.forestry.s.L * 0.7, -1, GHOST_V, 'ghost', '#FFB8FF'),
+    mk('main', ROADS.main.s.L * 0.92, -1, GHOST_V, 'ghost', '#00D8E8'),
+    mk('ibl', ROADS.ibl.s.L * 0.6, 1, GHOST_V, 'ghost', '#FFB852'),
+  ];
+  const pos = c => at(ROADS[c.road].s, c.s);
+  const dist = (a, b) => { const p = pos(a), q = pos(b); return Math.hypot(p.x - q.x, p.y - q.y); };
+  const ahead = (road, s, dir, d) => { const R = ROADS[road]; return at(R.s, clamp(s + dir * d, 0, R.s.L)); };
+
+  // choose where to go at a junction
+  function choose(c, node) {
+    const opts = [];
+    for (const { road, s } of roadsAt(node)) {
+      const L = ROADS[road].s.L;
+      for (const dir of [1, -1]) {
+        if ((dir > 0 && s > L - 2) || (dir < 0 && s < 2)) continue;          // dead end that way
+        if (road === c.road && dir === -c.dir) continue;                       // no U-turns at junctions
+        opts.push({ road, s, dir });
+      }
+    }
+    if (!opts.length) return { road: c.road, s: c.s, dir: -c.dir };
+    let best = null;
+    for (const o of opts) {
+      const q = ahead(o.road, o.s, o.dir, 70);
+      let score;
+      if (c.kind === 'pac') {
+        const near = Math.min(...ghosts.map(g => { const p = pos(g); return Math.hypot(p.x - q.x, p.y - q.y); }));
+        score = (near < 220 ? near : 220) + Math.random() * 160;            // wander, but steer away from nearby ghosts
+      } else {
+        const p = pos(pac);
+        score = (Math.random() < 0.5 ? -Math.hypot(p.x - q.x, p.y - q.y) : 0) + Math.random() * 160; // half-hearted chase
+      }
+      if (!best || score > best.score) best = { ...o, score };
+    }
+    return best;
+  }
+  function move(c, dt) {
+    let left = c.v * dt, guard = 0;
+    while (left > 0 && guard++ < 8) {
+      const J = NET[c.road] || [], L = ROADS[c.road].s.L;
+      // next junction strictly ahead
+      let nxt = null;
+      for (const j of J) { const d = (j.s - c.s) * c.dir; if (d > 0.01 && j.node !== c.last && (!nxt || d < (nxt.s - c.s) * c.dir)) nxt = j; }
+      const toEnd = c.dir > 0 ? L - c.s : c.s;
+      const toJ = nxt ? (nxt.s - c.s) * c.dir : Infinity;
+      if (left < Math.min(toJ, toEnd)) { c.s += c.dir * left; left = 0; if (c.last && Math.abs((J.find(j => j.node === c.last) || { s: -1e9 }).s - c.s) > 3) c.last = null; break; }
+      if (toJ <= toEnd) {
+        left -= toJ; c.s = nxt.s;
+        const o = choose(c, nxt.node);
+        c.road = o.road; c.s = o.s; c.dir = o.dir; c.last = nxt.node;
+      } else { left -= toEnd; c.s = c.dir > 0 ? L : 0; c.dir = -c.dir; c.last = null; }  // dead end: turn back
+    }
+  }
+  // keep the ghosts from ever catching Pac-Man
+  function keepApart(dt) {
+    pac.cool = Math.max(0, pac.cool - dt);
+    const P = pos(pac);
+    for (const g of ghosts) {
+      g.cool = Math.max(0, g.cool - dt);
+      const Q = pos(g), d = Math.hypot(P.x - Q.x, P.y - Q.y);
+      const toward = (Q.dx * g.dir * (P.x - Q.x) + Q.dy * g.dir * (P.y - Q.y)) > 0;   // ghost heading at Pac-Man
+      g.v = d < 80 ? PAC_V * 0.7 : GHOST_V;                                            // close up, ghosts drop below Pac-Man's speed
+      if (d < 85 && toward && g.cool === 0) { g.dir = -g.dir; g.last = null; g.cool = 1.5; }
+      const pacToward = (P.dx * pac.dir * (Q.x - P.x) + P.dy * pac.dir * (Q.y - P.y)) > 0;
+      if (d < 65 && pacToward && pac.cool === 0) { pac.dir = -pac.dir; pac.last = null; pac.cool = 1.5; }
+    }
+  }
+
+  // drawing
+  const pie = (r, a0, a1) => `M0 0L${(r * Math.cos(a0)).toFixed(2)} ${(r * Math.sin(a0)).toFixed(2)}A${r} ${r} 0 1 1 ${(r * Math.cos(a1)).toFixed(2)} ${(r * Math.sin(a1)).toFixed(2)}Z`;
+  const pacG = el('g', {}, gFun);
+  const pacRed = el('path', { fill: '#DC241F', stroke: '#1a1a1a', 'stroke-width': 1 }, pacG);
+  const pacWhite = el('path', { fill: '#fff' }, pacG);
+  const pacTxt = el('text', { x: 0, y: 1, 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-size': 11, 'font-weight': 700, fill: '#000', 'font-family': 'Arial, Helvetica, sans-serif' }, pacG);
+  pacTxt.textContent = '20';
+  const ghostEls = ghosts.map(g => {
+    const G = el('g', {}, gFun);
+    const body = el('path', { fill: g.col, stroke: '#1a1a1a', 'stroke-width': 1.2 }, G);
+    const eyes = [-4.5, 4.5].map(x => { el('ellipse', { cx: x, cy: -2, rx: 3.6, ry: 4.4, fill: '#fff' }, G); return el('circle', { cx: x, cy: -2, r: 2, fill: '#1d36d8' }, G); });
+    return { G, body, eyes };
+  });
+  const ghostPath = w => `M-12 12V0A12 12 0 0 1 12 0V12${w ? 'L8 8.5L4 12L0 8.5L-4 12L-8 8.5Z' : 'L10 8.5L6 12L2 8.5L-2 12L-6 8.5L-10 12Z'}`;
+  let t = 0;
+  function draw() {
+    const p = pos(pac), ang = Math.atan2(p.dy * pac.dir, p.dx * pac.dir), m = 0.08 + 0.55 * Math.abs(Math.sin(t * 9));
+    pacG.setAttribute('transform', `translate(${p.x.toFixed(1)} ${p.y.toFixed(1)}) scale(1.5)`);
+    pacRed.setAttribute('d', pie(14, ang + m, ang - m));
+    pacWhite.setAttribute('d', pie(10.5, ang + m, ang - m));
+    ghosts.forEach((g, i) => {
+      const q = pos(g), E = ghostEls[i], ex = q.dx * g.dir * 1.6, ey = q.dy * g.dir * 1.6;
+      E.G.setAttribute('transform', `translate(${q.x.toFixed(1)} ${(q.y - 3).toFixed(1)}) scale(1.5)`);
+      E.body.setAttribute('d', ghostPath(Math.floor(t * 6) % 2));
+      E.eyes.forEach((e, k) => { e.setAttribute('cx', ((k ? 4.5 : -4.5) + ex).toFixed(1)); e.setAttribute('cy', (-2 + ey).toFixed(1)); });
+    });
+    gFun.style.opacity = sel ? 0.35 : 1;
+  }
+  function step(dt) { t += dt; keepApart(dt); move(pac, dt); ghosts.forEach(g => move(g, dt)); }
+  draw();
+  if (!reduce) {
+    let prev = performance.now();
+    const loop = now => { const dt = Math.min(0.1, (now - prev) / 1000); prev = now; step(dt); draw(); requestAnimationFrame(loop); };
+    requestAnimationFrame(loop);
+  }
+  window.__halloween = { step, pac, ghosts, dist };
+})();
+
 window.__ifold = { recs, ROADS, SPURS, search, leg };
 })();
 
