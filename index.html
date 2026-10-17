@@ -955,7 +955,15 @@ function leg(r, fwd) {
   const q = at(R.g, s), ang = (Math.atan2(q.dx * sgn, q.dy * sgn) * 180 / Math.PI + 360) % 360;
   return { side, prev, next, dist: prev ? Math.abs(s - prev.s) : null, nth, heading: COMPASS[Math.round(ang / 45) % 8] };
 }
+// The starting points themselves get hand-written directions (directions "from the shop" to the shop make no sense)
+const SPECIAL = {
+  'Ifold Stores (Shop)': { text: 'Located at the main entrance to the village, at the junction of Plaistow Road and The Drive.' },
+  'Kelsey Hall': { side: 'L', text: 'Enter Chalk Road at the bus stop and drive 500 yards to Kelsey Hall. The car park is on the left.' },
+  'Ifold Motors (The Garage)': { side: 'L', text: 'Enter Chalk Road at the bus stop and drive 700 yards. Turn left at the T-junction, and Ifold Motors is 100 yards on the left.' },
+};
 function legHTML(r, L) {
+  const sp = SPECIAL[r.label];
+  if (sp) return `<div class="dir">${sp.side ? `<div class="side ${sp.side}">${sp.side === 'L' ? 'LEFT' : 'RIGHT'}</div>` : ''}<div class="head">Directions</div><div class="body">${esc(sp.text)}</div></div>`;
   const sideW = L.side === 'L' ? 'left' : 'right';
   const after = L.prev ? `${metres(L.dist)} <b>${esc(L.prev.name)}</b>` : 'near the start of the road';
   const before = L.next ? `before <b>${esc(L.next.name)}</b>` : 'before the end of the road';
@@ -1028,7 +1036,7 @@ function renderSel() {
   const pill = `<span class="pill" style="background:${colAt(R, r.s)};color:${R.tagInk}">${esc(r.roadName)}</span>`;
   const setback = !r.spur && r.off > 55 ? `<div class="note">Set back about ${Math.round(r.off / 10) * 10} m from the road. Look for a driveway.</div>` : '';
   $card.innerHTML = `<div class="cardtop"><h2>${esc(r.label)}</h2><button class="x" type="button" id="x" aria-label="Close directions">×</button></div>
-    <div class="where">${pill}<span>${esc(where(r).replace(' of ' + r.roadName, '').replace(', off ' + r.roadName, ''))}</span>${r.pc.startsWith('RH') ? `<span>${esc(r.pc)}</span>` : ''}</div>
+    <div class="where">${pill}${SPECIAL[r.label] ? '' : `<span>${esc(where(r).replace(' of ' + r.roadName, '').replace(', off ' + r.roadName, ''))}</span>`}${r.pc.startsWith('RH') ? `<span>${esc(r.pc)}</span>` : ''}</div>
     ${legHTML(r, F)}${setback}${navHTML(r)}`;
   $sheet.hidden = !cardOpen;
   go(fitInto(b, 30, WIDE.matches || !cardOpen ? 0 : $sheet.offsetHeight + 8)); // keep the station clear of the card on phones
