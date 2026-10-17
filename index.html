@@ -288,7 +288,7 @@ function projectHouse(pl, P) {
     const ax = p[i][0], ay = p[i][1], vx = p[i + 1][0] - ax, vy = p[i + 1][1] - ay;
     const l2 = vx * vx + vy * vy || 1e-9, raw = ((P[0] - ax) * vx + (P[1] - ay) * vy) / l2, t = clamp(raw, 0, 1);
     const fx = ax + t * vx, fy = ay + t * vy, d = Math.hypot(P[0] - fx, P[1] - fy);
-    const tip = (i === 0 && raw < 0) || (i === n - 1 && raw > 1);
+    const tip = raw < 0 || raw > 1; // foot not square to the road (beyond a bend or the end)
     const score = d + (tip ? 8 : 0);
     if (!best || score < best.score) best = { score, d, s: pl.c[i] + t * Math.sqrt(l2), cross: vx * (P[1] - ay) - vy * (P[0] - ax), i };
   }
@@ -336,6 +336,10 @@ const dstr = pts => 'M' + pts.map(p => p[0].toFixed(1) + ' ' + p[1].toFixed(1)).
 /* ---------- the map: roads drawn as tube lines ---------- */
 const rev = a => a.slice().reverse();
 const MAIN_GEO = GEO_ROADS.loxwood.concat(GEO_ROADS.plaistow.slice(1));
+// Chalk Road carries on round the curve past The Drive to the Hogwood Road junction (OpenStreetMap calls that stretch The Lane,
+// but the addresses there are Chalk Road); The Lane starts at Hogwood Road
+const LANE_ALL = rev(GEO_ROADS.lane), LANE_CUT = LANE_ALL.findIndex(p => p[0] === 51.073167 && p[1] === -0.537848);
+const CHALK_GEO = rev(GEO_ROADS.chalk).concat(LANE_ALL.slice(1, LANE_CUT + 1)), LANE_GEO = LANE_ALL.slice(LANE_CUT);
 const ROADS = {
   drive: { name: 'The Drive', col: '#F3A9BB', tagInk: '#14172a', geo: rev(GEO_ROADS.drive), r: 36,
     sch: [[751, 1220], [751, 447], [609, 447]],
@@ -344,9 +348,9 @@ const ROADS = {
       ['Hawthorn Close', [751, 630]], ['Oakdene Place', [751, 538]], ['Loxmeadow Close', [751, 492]], ['Thistledown Vale', [742, 456]]],
     dirs: ['Heading north from Plaistow Road (Ifold Stores end)', 'Heading south from Chalk Road'],
     tag: { x: 751, y: 1160, rot: -90 } },
-  chalk: { name: 'Chalk Road', col: '#9B0056', tagInk: '#fff', geo: rev(GEO_ROADS.chalk), r: 40,
-    sch: [[330, 848], [603, 575], [603, 453]],
-    anchors: [[[51.069072, -0.541878], [468, 710]], ['Kelsey Hall', [556, 622]], ['Sycamore Close', [603, 516]]],
+  chalk: { name: 'Chalk Road', col: '#9B0056', tagInk: '#fff', geo: CHALK_GEO, r: [0, 40, 0, 18, 18, 0],
+    sch: [[330, 848], [603, 575], [603, 453], [580, 453], [555, 428], [555, 398]],
+    anchors: [[[51.069072, -0.541878], [468, 710]], ['Kelsey Hall', [556, 622]], ['Sycamore Close', [603, 516]], [[51.072393, -0.53745], [603, 453]]],
     dirs: ['Heading north-east from Plaistow Road', 'Heading south-west from The Drive'],
     tag: { x: 512, y: 666, rot: -45 } },
   ride: { name: 'The Ride', col: '#00782A', tagInk: '#fff', geo: GEO_ROADS.ride, r: 40,
@@ -354,10 +358,10 @@ const ROADS = {
     anchors: [[[51.069072, -0.541878], [468, 710]], ['Mill House', [500, 742]], ['Chequer Close', [688, 930]]],
     dirs: ['Heading east from Loxwood Road', 'Heading west from The Drive'],
     tag: { x: 420, y: 662, rot: 45 } },
-  lane: { name: 'The Lane', col: 'var(--track-black)', tagInk: 'var(--bg)', geo: rev(GEO_ROADS.lane), r: 18,
-    sch: [[606, 453], [580, 453], [555, 428], [555, 248], [310, 248], [310, 175]],
-    anchors: [[[51.073167, -0.537848], [555, 398]], ['The Olde Garden', [555, 366]], [[51.075829, -0.53886], [555, 290]], [[51.076053, -0.539127], [555, 248]], [[51.075463, -0.541479], [310, 248]]],
-    dirs: ['Heading north from Chalk Road', 'Heading south towards Chalk Road'],
+  lane: { name: 'The Lane', col: 'var(--track-black)', tagInk: 'var(--bg)', geo: LANE_GEO, r: 18,
+    sch: [[555, 398], [555, 248], [310, 248], [310, 175]],
+    anchors: [['The Olde Garden', [555, 366]], [[51.075829, -0.53886], [555, 290]], [[51.076053, -0.539127], [555, 248]], [[51.075463, -0.541479], [310, 248]]],
+    dirs: ['Heading north from Hogwood Road', 'Heading south towards Hogwood Road'],
     bends: [[[51.076053, -0.539127], 'the bend by Lakeside'], [[51.075463, -0.541479], 'the sharp corner']],
     tag: { x: 432, y: 248, rot: 0 } },
   ibl: { name: 'Ifold Bridge Lane', col: '#B36305', tagInk: '#fff', geo: GEO_ROADS.ibl, r: 30,
@@ -393,9 +397,9 @@ const ROADS = {
 };
 const PARENT = { close: 'drive', wych: 'close' };
 const JUNCTIONS = [
-  ['drive', 'chalk', [51.072393, -0.53745]], ['drive', 'lane', [51.072393, -0.53745]], ['drive', 'ride', [51.066646, -0.535049]],
+  ['drive', 'chalk', [51.072393, -0.53745]], ['drive', 'ride', [51.066646, -0.535049]],
   ['drive', 'close', [51.069166, -0.535667]], ['drive', 'main', [51.064054, -0.530882]], ['chalk', 'main', [51.06814, -0.54398]],
-  ['chalk', 'ride', [51.069072, -0.541878]], ['chalk', 'lane', [51.072438, -0.537629]], ['lane', 'hogwood', [51.073167, -0.537848]],
+  ['chalk', 'ride', [51.069072, -0.541878]], ['chalk', 'lane', [51.073167, -0.537848]], ['chalk', 'hogwood', [51.073167, -0.537848]], ['lane', 'hogwood', [51.073167, -0.537848]],
   ['lane', 'ibl', [51.075829, -0.53886]], ['lane', 'forestry', [51.077763, -0.544956]], ['ride', 'main', [51.069941, -0.547003]],
   ['main', 'poundfield', [51.069941, -0.547003]], ['main', 'forestry', [51.069915, -0.547992]], ['close', 'wych', [51.069346, -0.538352]],
 ];
@@ -530,8 +534,13 @@ for (const sp of SPURS) {
   for (const r of recs) if (r.icon === 'House' && compact(r.label).includes(key)) own[r.pc] = (own[r.pc] || 0) + 1;
   sp.pcs = new Set(Object.keys(own).filter(pc => pcUse[pc] - own[pc] <= 3));
 }
+// Where a house's pin is ambiguous between two stretches of road, give the spot where its drive meets the road.
+// Only used to decide where along the road it sits; the pin itself is unchanged.
+const ENTRANCES = {
+  'Drumlave': [51.07228, -0.53760], // west side of Chalk Road, just south of The Drive junction (above Carenage)
+};
 for (const r of recs) {
-  const P = xy([r.lat, r.lng]);
+  const P = xy(ENTRANCES[r.label] || [r.lat, r.lng]);
   const fk = FIELD[r.field.toLowerCase()];
   const cl = compact(r.label);
   const pick = keys => {
@@ -547,6 +556,9 @@ for (const r of recs) {
   };
   let { m, sp } = pick(fk ? family(fk) : Object.keys(ROADS));
   if (m.p.d > 120 && !(sp && sp.p.d < 60)) ({ m, sp } = pick(Object.keys(ROADS)));
+  // the postal road can differ from where the drive actually meets the road: if another road is right beside the house
+  // and the postal road is well away, use the one beside it (e.g. September House's drive is on Chalk Road)
+  if (fk) { const all = pick(Object.keys(ROADS)); if (all.m.k !== m.k && all.m.p.d < 20 && m.p.d > 30 && !(sp && sp.p.d < 20)) ({ m, sp } = all); }
   // a house called "6 Wildacre Close" or "2 Wychwood" belongs there, whatever is nearest
   const named = r.icon === 'House' ? SPURS.find(s => s.name && cl.includes(compact(s.name))) : null;
   if (named) sp = { s: named, p: project(named.g, P) }, m = { k: named.road, p: { d: 1e9 } };
@@ -592,8 +604,9 @@ const YELLOW = (function () {
       out.push([q.x + nx * K, q.y + ny * K]);
     }
   };
-  run(ROADS.chalk, [468, 710], [603, 453]);
-  run(ROADS.drive, [609, 447], [751, 993]);
+  run(ROADS.chalk, [468, 710], [603, 478]);   // stop before Chalk Road curves away towards Hogwood Road
+  out.push([603 + K, 447 + K]);                // inner corner, hidden under The Drive junction
+  run(ROADS.drive, [616, 447], [751, 993]);
   run(ROADS.ride, [751, 993], [468, 710]);
   out.push(out[0]);
   return mkPoly(out);
