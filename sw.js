@@ -1,12 +1,12 @@
-// Ifold Underground – offline support.
-// Pages and data.js: try the network first (so updates show up straight away),
+// Ifold Tube Map – offline support.
+// Pages and data.csv: try the network first (so updates show up straight away),
 // but give up after a few seconds and use the saved copy, so it still works with weak or no signal.
 // Fonts and icons: use the saved copy.
-const CACHE = 'ifold-underground-v1';
+const CACHE = 'ifold-tube-map-v2';
 const CORE = [
   './',
   './index.html',
-  './data.js',
+  './data.csv',
   './manifest.webmanifest',
   './fonts/hammersmith-one-latin-400-normal.woff2',
   './fonts/hammersmith-one-latin-ext-400-normal.woff2',
@@ -48,13 +48,13 @@ self.addEventListener('fetch', event => {
   const req = event.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
   const path = new URL(req.url).pathname;
-  const fresh = req.mode === 'navigate' || path.endsWith('/') || path.endsWith('.html') || path.endsWith('data.js');
+  const fresh = req.mode === 'navigate' || path.endsWith('/') || path.endsWith('.html') || path.endsWith('data.csv') || path.endsWith('data.js');
 
   if (fresh) {
     event.respondWith(
       fromNetwork(req, 4000).catch(() =>
         caches.match(req, { ignoreSearch: true })
-          .then(hit => hit || caches.match('./index.html'))
+          .then(hit => hit || (req.mode === 'navigate' ? caches.match('./index.html') : null))
           .then(hit => hit || fetch(req))
       )
     );

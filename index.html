@@ -149,8 +149,6 @@ svg#map.drag{cursor:grabbing}
   </div>
 </div>
 
-<script>var FullArray = [];</script>
-<script src="data.js"></script>
 <script>
 // Road centrelines from OpenStreetMap (© OpenStreetMap contributors, ODbL), as [lat, lng].
 // Main roads are ordered in their "canonical" driving direction.
@@ -253,7 +251,7 @@ const GEO_SPURS = [
 
 </script>
 <script>
-(function () {
+function startIfold(ROWS) {
 'use strict';
 const NS = 'http://www.w3.org/2000/svg';
 const WIDE = matchMedia('(min-width: 860px)'); // map left, search column right
@@ -433,12 +431,20 @@ const SPURS = GEO_SPURS.map((sp, i) => {
 });
 
 /* records */
-const SKIP = new Set(['Santa', 'Elf', 'Star', 'BT']);
+const SKIP = new Set(['santa stop', 'santa', 'elf', 'star', 'bt cabinet', 'bt']); // seasonal or not useful to drivers
 const FIELD = { 'the drive': 'drive', 'chalk road': 'chalk', 'the ride': 'ride', 'hogwood road': 'hogwood', 'the lanes': 'lane', 'the lane': 'lane',
   'the close': 'close', 'loxwood road': 'main', 'plaistow road': 'main', 'plasitow road': 'main', 'ifoldhurst': 'main',
   'ifold bridge lane': 'ibl', 'poundfield lane': 'poundfield', 'forestry road': 'forestry' };
-const recs = FullArray.filter(r => r && !SKIP.has(r.icon)).map((r, id) => ({ id, label: String(r.label).trim().replace(/\)(?=[A-Za-z0-9])/g, '), '), field: String(r.road || '').trim(),
-  pc: String(r.postcode || '').trim(), lat: +r.lat, lng: +r.lng, icon: r.icon }));
+const num = v => { const n = parseFloat(v); return isFinite(n) ? n : null; };
+const ICON = d => { const t = d.toLowerCase().replace(/\s+/g, ' '); return t === 'house' ? 'House' : (t === 'sign post' || t === 'signpost') ? 'Sign Post' : d; };
+const recs = ROWS.filter(row => num(row.latitude) !== null && num(row.longitude) !== null && !SKIP.has(String(row.description || '').trim().toLowerCase()))
+  .map((row, id) => {
+    const number = String(row.number || '').trim(), name = String(row.name || '').trim(), side = String(row.sideroad || '').trim();
+    const road = String(row.road || '').trim(), desc = String(row.description || '').trim() || 'House';
+    const label = name && number ? `${name} (${number})${side ? ', ' + side : ''}` : number ? `${number} ${side || road}` : name || side || road;
+    return { id, src: row.id, label, number, name, sideroad: side, field: road, pc: String(row.postcode || '').trim(),
+      lat: num(row.latitude), lng: num(row.longitude), elat: num(row.entrancelatitude), elng: num(row.entrancelongitude), icon: ICON(desc), desc };
+  });
 
 /* name unnamed spurs from the sign posts that stand at their mouths */
 for (const r of recs) if (r.icon === 'Sign Post') {
@@ -554,22 +560,52 @@ for (const sp of SPURS) {
   for (const r of recs) if (r.icon === 'House' && compact(r.label).includes(key)) own[r.pc] = (own[r.pc] || 0) + 1;
   sp.pcs = new Set(Object.keys(own).filter(pc => pcUse[pc] - own[pc] <= 3));
 }
-// Where a house's pin is ambiguous between two stretches of road, give the spot where its drive meets the road.
-// Only used to decide where along the road it sits; the pin itself is unchanged.
-const ENTRANCES = {
-  'Drumlave': [51.07228, -0.53760], // west side of Chalk Road, just south of The Drive junction (above Carenage)
-};
+const near = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 for (const r of recs) {
-  const P = xy(ENTRANCES[r.label] || [r.lat, r.lng]);
+  const H = xy([r.lat, r.lng]), E = r.elat !== null && r.elng !== null ? xy([r.elat, r.elng]) : null;
   const fk = FIELD[r.field.toLowerCase()];
   const cl = compact(r.label);
+  // 1. explicit "Sideroad" column
+  const sideKey = compact(r.sideroad || '');
+  let placed = false;
+  if (sideKey === 'wychwood') {
+    const pe = projectHouse(ROADS.wych.g, E || H), ph = project(ROADS.wych.g, H);
+    r.road = 'wych'; r.s = pe.s; r.side = Math.sign(ph.cross) || 1; r.off = ph.d; placed = true;
+  } else if (sideKey) {
+    const sp = SPURS.find(x => x.name && compact(x.name) === sideKey);
+    if (sp) {
+      const pe = project(sp.g, E || H), ph = project(sp.g, H);
+      r.road = sp.road; r.spur = sp; r.s = sp.js; r.side = sp.side; r.in = pe.s; r.inSide = Math.sign(ph.cross) || 1; r.off = ph.d;
+      if (r.icon === 'House') sp.n++;
+      placed = true;
+    } else console.warn('Unknown sideroad in data.csv:', r.sideroad, r.label);
+  }
+  // 2. "Entrance latitude/longitude": the road it meets is the road the property is reached from
+  if (!placed && E) {
+    const fam = fk ? family(fk) : [];
+    let best = null;
+    for (const k in ROADS) { const p = projectHouse(ROADS[k].g, E), sc = p.d - (fam.includes(k) ? 3 : 0); if (!best || sc < best.sc) best = { k, p, sc }; }
+    let dw = null; // a shared driveway that starts at this entrance
+    const hSide = Math.sign(project(ROADS[best.k].g, H).cross) || 1;
+    for (const sp of SPURS) if (!sp.name && sp.road === best.k && sp.side === hSide && near(sp.g.pts[0], E) < 3) { const ph = project(sp.g, H); if (!dw || ph.d < dw.ph.d) dw = { sp, ph }; }
+    if (dw) {
+      r.road = dw.sp.road; r.spur = dw.sp; r.s = dw.sp.js; r.side = dw.sp.side; r.in = dw.ph.s; r.inSide = Math.sign(dw.ph.cross) || 1; r.off = dw.ph.d;
+      if (r.icon === 'House') dw.sp.n++;
+    } else {
+      const R = ROADS[best.k], ph = project(R.g, H);
+      r.road = best.k; r.s = best.p.s; r.side = Math.sign(ph.cross) || 1; r.off = near(H, E) > ph.d ? near(H, E) : ph.d;
+    }
+    placed = true;
+  }
+  if (!placed) { // 3. no sideroad or entrance given: work it out from the pin, as before
+  const P = H;
   const pick = keys => {
     let m = null;
     for (const k of keys) { const p = projectHouse(ROADS[k].g, P); if (!m || p.d < m.p.d) m = { k, p }; }
     let sp = null;
     for (const s of SPURS) if (keys.includes(s.road)) {
       const p = project(s.g, P);
-      if (s.name && !(cl.includes(compact(s.name)) || s.pcs.has(r.pc) || (m.p.d > 60 && p.d < 30))) continue; // not admitted to this close
+      if (s.name && !(cl.includes(compact(s.name)) || s.pcs.has(r.pc))) continue; // not admitted to this close
       if (!sp || p.d < sp.p.d) sp = { s, p };
     }
     return { m, sp };
@@ -589,12 +625,13 @@ for (const r of recs) {
   } else {
     r.road = m.k; r.s = m.p.s; r.side = Math.sign(m.p.cross) || 1; r.off = m.p.d;
   }
+  }
   // compass side of the road
   const R = ROADS[r.road], q = at(R.g, r.s), nx = -q.dy * r.side, ny = q.dx * r.side;
   const ang = (Math.atan2(nx, ny) * 180 / Math.PI + 360) % 360;
   r.compass = ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'][Math.round(ang / 45) % 8];
   r.roadName = roadName(R, r.s);
-  r.hay = norm([r.label, r.field, r.roadName, r.spur && r.spur.name, r.pc, r.pc.replace(/\s+/g, '')].filter(Boolean).join(' | '));
+  r.hay = norm([r.label, r.name, r.number && (r.number + ' ' + (r.sideroad || r.field)), r.field, r.roadName, r.spur && r.spur.name, r.sideroad, r.desc, r.pc, r.pc.replace(/\s+/g, '')].filter(Boolean).join(' | '));
 }
 
 /* ---------- SVG drawing ---------- */
@@ -969,8 +1006,9 @@ function legHTML(r, L) {
   const before = L.next ? `before <b>${esc(L.next.name)}</b>` : 'before the end of the road';
   let body;
   const inSide = r.spur ? (r.inSide > 0 ? 'left' : 'right') : '', inM = r.spur ? Math.max(10, Math.round(r.in / 10) * 10) : 0;
-  if (r.spur && r.spur.name) body = `Turn ${sideW} into <b>${esc(r.spur.name)}</b>${L.prev ? ', ' + after : ''}. The house is on your ${inSide}, about ${inM} m in.`;
-  else if (r.spur) body = `Driveway on your ${sideW}, ${after}, ${before}. The house is on your ${inSide}, about ${inM} m down${r.spur.n > 1 ? ` (${r.spur.n} homes share it)` : ''}.`;
+  const noun = { House: 'house', Farm: 'farm', Field: 'field', Hall: 'hall', Shop: 'shop', Garage: 'garage' }[r.icon] || 'entrance';
+  if (r.spur && r.spur.name) body = `Turn ${sideW} into <b>${esc(r.spur.name)}</b>${L.prev ? ', ' + after : ''}. The ${noun} is on your ${inSide}, about ${inM} m in.`;
+  else if (r.spur) body = `Driveway on your ${sideW}, ${after}, ${before}. The ${noun} is on your ${inSide}, about ${inM} m down${r.spur.n > 1 ? ` (${r.spur.n} homes share it)` : ''}.`;
   else body = `On your ${sideW}, ${after}, ${before}.${L.nth ? ` About the ${ord(L.nth)} house on that side.` : ''}`;
   return `<div class="dir"><div class="side ${L.side}">${L.side === 'L' ? 'LEFT' : 'RIGHT'}</div><div class="head">From ${esc(L.start.name)}, heading ${L.heading} on ${esc(r.roadName)}</div><div class="body">${body}</div></div>`;
 }
@@ -986,8 +1024,8 @@ let navPref = null;
 try { navPref = localStorage.getItem('ifold-nav'); } catch (e) {}
 function navHTML(r) {
   const order = Object.keys(APPS).sort((a, b) => (b === navPref) - (a === navPref) || (isApple ? (b === 'apple') - (a === 'apple') : (a === 'apple') - (b === 'apple')));
-  const la = r.lat.toFixed(6), lo = r.lng.toFixed(6);
-  return `<div class="nav"><span class="navhead">Walking directions to this spot</span><div class="navbtns">`
+  const useE = r.elat !== null && r.elng !== null, la = (useE ? r.elat : r.lat).toFixed(6), lo = (useE ? r.elng : r.lng).toFixed(6);
+  return `<div class="nav"><span class="navhead">Walking directions to ${useE ? 'the entrance' : 'this spot'}</span><div class="navbtns">`
     + order.map(k => `<a class="navbtn${k === navPref ? ' pref' : ''}" data-app="${k}" href="${APPS[k].url(la, lo)}" target="_blank" rel="noopener">${APPS[k].name}${APPS[k].note ? ` <small>(${APPS[k].note})</small>` : ''}</a>`).join('')
     + `<button class="navbtn" type="button" id="copyll" data-ll="${la}, ${lo}">Copy location</button></div></div>`;
 }
@@ -1072,6 +1110,11 @@ let h = '';
 try { h = new URLSearchParams(location.search).get('search') || ''; } catch (e) {}
 if (!h && location.hash !== '#halloween') h = decodeURIComponent(location.hash.slice(1)).replace(/[._~-]/g, ' ');
 if (h) { $q.value = h; run(); } else renderAll();
+const unxy = (x, y) => [y / KY + LAT0, x / KX + LNG0];
+function entranceOf(r) { // where the property's access meets the road it is reached from
+  if (r.spur) { const q = r.spur.name ? at(r.spur.g, r.in) : { x: r.spur.g.pts[0][0], y: r.spur.g.pts[0][1] }; return unxy(q.x, q.y); }
+  const q = at(ROADS[r.road].g, r.s); return unxy(q.x, q.y);
+}
 
 /* ---------- Halloween: three ghosts chase a "20 mph" Pac-Man round the roads (29 Oct – 2 Nov, or ?halloween / #halloween) ---------- */
 (function halloween() {
@@ -1207,10 +1250,39 @@ if (h) { $q.value = h; run(); } else renderAll();
   window.__halloween = { step, pac, ghosts, dist };
 })();
 
-window.__ifold = { recs, ROADS, SPURS, search, leg };
-})();
+window.__ifold = { recs, ROADS, SPURS, search, leg, entranceOf };
+}
 
 </script>
+<script>
+/* Read the address list. data.csv columns (any order, header names not case-sensitive):
+   ID, Number, Name, Sideroad, Road, Postcode, Property description, Latitude, Longitude, Entrance latitude, Entrance longitude, Show, Hide */
+function parseCSV(text) {
+  text = text.replace(/^\uFEFF/, '');
+  const rows = []; let row = [], f = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { row.push(f); f = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(f); rows.push(row); row = []; f = ''; }
+    else f += c;
+  }
+  if (f !== '' || row.length) { row.push(f); rows.push(row); }
+  const ALIAS = { propertydescription: 'description', type: 'description', icon: 'description', lat: 'latitude', lng: 'longitude', lon: 'longitude', long: 'longitude',
+    entrancelat: 'entrancelatitude', entrancelng: 'entrancelongitude', entrancelon: 'entrancelongitude', postalroad: 'road', housenumber: 'number', housename: 'name' };
+  const head = (rows.shift() || []).map(h => { const k = h.toLowerCase().replace(/[^a-z0-9]/g, ''); return ALIAS[k] || k; });
+  return rows.filter(r => r.some(v => v.trim() !== '')).map(r => Object.fromEntries(head.map((h, i) => [h, (r[i] || '').trim()])));
+}
+(async () => {
+  const emb = document.getElementById('data-csv');
+  let text = emb ? emb.textContent.trim() : '';
+  if (text.startsWith('/*')) text = '';   // placeholder left in: fetch the file instead
+  if (!text) { const res = await fetch('data.csv', { cache: 'no-cache' }); if (!res.ok) throw new Error('data.csv ' + res.status); text = await res.text(); }
+  startIfold(parseCSV(text));
+})().catch(err => { console.error(err); document.getElementById('meta').textContent = 'Could not load the address list (data.csv). Check your connection and reload the page.'; });
+</script>
+
 
 <script>
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
