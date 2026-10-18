@@ -441,8 +441,10 @@ const recs = ROWS.filter(row => num(row.latitude) !== null && num(row.longitude)
   .map((row, id) => {
     const number = String(row.number || '').trim(), name = String(row.name || '').trim(), side = String(row.sideroad || '').trim();
     const road = String(row.road || '').trim(), desc = String(row.description || '').trim() || 'House';
-    const label = name && number ? `${name} (${number})${side ? ', ' + side : ''}` : number ? `${number} ${side || road}` : name || side || road;
-    return { id, src: row.id, label, number, name, sideroad: side, field: road, pc: String(row.postcode || '').trim(),
+    const was = String(row.was || '').trim();
+    let label = name && number ? `${name} (${number})${side ? ', ' + side : ''}` : number ? `${number} ${side || road}` : name || side || road;
+    if (was) label += ` (formerly ${was})`;
+    return { id, src: row.id, label, number, name, was, sideroad: side, field: road, pc: String(row.postcode || '').trim(),
       lat: num(row.latitude), lng: num(row.longitude), elat: num(row.entrancelatitude), elng: num(row.entrancelongitude), icon: ICON(desc), desc };
   });
 
@@ -563,6 +565,7 @@ for (const sp of SPURS) {
 const near = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 for (const r of recs) {
   const H = xy([r.lat, r.lng]), E = r.elat !== null && r.elng !== null ? xy([r.elat, r.elng]) : null;
+  r.H = H; r.E = E;
   const fk = FIELD[r.field.toLowerCase()];
   const cl = compact(r.label);
   // 1. explicit "Sideroad" column
@@ -631,7 +634,7 @@ for (const r of recs) {
   const ang = (Math.atan2(nx, ny) * 180 / Math.PI + 360) % 360;
   r.compass = ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'][Math.round(ang / 45) % 8];
   r.roadName = roadName(R, r.s);
-  r.hay = norm([r.label, r.name, r.number && (r.number + ' ' + (r.sideroad || r.field)), r.field, r.roadName, r.spur && r.spur.name, r.sideroad, r.desc, r.pc, r.pc.replace(/\s+/g, '')].filter(Boolean).join(' | '));
+  r.hay = norm([r.label, r.name, r.number && (r.number + ' ' + (r.sideroad || r.field)), r.field, r.roadName, r.spur && r.spur.name, r.sideroad, r.was, r.desc, r.pc, r.pc.replace(/\s+/g, '')].filter(Boolean).join(' | '));
 }
 
 /* ---------- SVG drawing ---------- */
@@ -787,6 +790,14 @@ for (const sp of SPURS) {
 function place(r) {
   const R = ROADS[r.road];
   if (r.spur) return r.spur.toSch(xy([r.lat, r.lng]));
+  if (r.E) { // pin at the house, laid out relative to its entrance on the drawn road
+    const gq = at(R.g, r.s), sq = at(R.s, R.map(r.s));
+    const gnx = -gq.dy * r.side, gny = gq.dx * r.side, snx = sq.dy * r.side, sny = -sq.dx * r.side;
+    const dx = r.H[0] - r.E[0], dy = r.H[1] - r.E[1];
+    const yel = nearYellow(sq.x + snx * 12, sq.y + sny * 12);
+    const along = (dx * gq.dx + dy * gq.dy) * SPUR_K, perp = Math.max(yel ? 31 : 17, (dx * gnx + dy * gny) * SPUR_K + (yel ? 14 : 0));
+    return { x: sq.x + sq.dx * along + snx * perp, y: sq.y + sq.dy * along + sny * perp, nx: snx, ny: sny, q: sq };
+  }
   let off = 17;
   let p = schPoint(R, r.s, r.side, off);
   if (nearYellow(p.x, p.y)) { off += 14; p = schPoint(R, r.s, r.side, off); }
@@ -994,12 +1005,12 @@ function leg(r, fwd) {
 }
 // The starting points themselves get hand-written directions (directions "from the shop" to the shop make no sense)
 const SPECIAL = {
-  'Ifold Stores (Shop)': { text: 'Located at the main entrance to the village, at the junction of Plaistow Road and The Drive.' },
+  'Ifold Stores': { text: 'Located at the main entrance to the village, at the junction of Plaistow Road and The Drive.' },
   'Kelsey Hall': { side: 'L', text: 'Enter Chalk Road at the bus stop and drive 500 yards to Kelsey Hall. The car park is on the left.' },
-  'Ifold Motors (The Garage)': { side: 'L', text: 'Enter Chalk Road at the bus stop and drive 700 yards. Turn left at the T-junction, and Ifold Motors is 100 yards on the left.' },
+  'Ifold Motors': { side: 'L', text: 'Enter Chalk Road at the bus stop and drive 700 yards. Turn left at the T-junction, and Ifold Motors is 100 yards on the left.' },
 };
 function legHTML(r, L) {
-  const sp = SPECIAL[r.label];
+  const sp = SPECIAL[r.name] || SPECIAL[r.label];
   if (sp) return `<div class="dir">${sp.side ? `<div class="side ${sp.side}">${sp.side === 'L' ? 'LEFT' : 'RIGHT'}</div>` : ''}<div class="head">Directions</div><div class="body">${esc(sp.text)}</div></div>`;
   const sideW = L.side === 'L' ? 'left' : 'right';
   const after = L.prev ? `${metres(L.dist)} <b>${esc(L.prev.name)}</b>` : 'near the start of the road';
@@ -1054,6 +1065,9 @@ function renderSel() {
   if (r.spur) {
     route = [[base.x, base.y]].concat(slice(r.spur.g, 0, Math.max(1, r.in)).map(P => { const q = r.spur.toSch(P); return [q.x, q.y]; }), [[p.x, p.y]]);
     el('path', { d: dstr(route), fill: 'none', stroke: 'var(--station-ring)', 'stroke-width': 3.5, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-dasharray': '0.1 8' }, gSel);
+  } else if (r.E && Math.hypot(r.H[0] - r.E[0], r.H[1] - r.E[1]) > 20) {
+    route = [[base.x, base.y], [p.x, p.y]]; // dotted: from the entrance on the road to the house
+    el('path', { d: dstr(route), fill: 'none', stroke: 'var(--station-ring)', 'stroke-width': 3.5, 'stroke-linecap': 'round', 'stroke-dasharray': '0.1 8' }, gSel);
   } else el('line', { x1: base.x, y1: base.y, x2: p.x, y2: p.y, stroke: 'var(--station-ring)', 'stroke-width': 6 }, gSel);
   // red map pin with its tip on the house
   const pin = el('g', { transform: `translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})` }, gSel);
@@ -1074,7 +1088,7 @@ function renderSel() {
   const pill = `<span class="pill" style="background:${colAt(R, r.s)};color:${R.tagInk}">${esc(r.roadName)}</span>`;
   const setback = !r.spur && r.off > 55 ? `<div class="note">Set back about ${Math.round(r.off / 10) * 10} m from the road. Look for a driveway.</div>` : '';
   $card.innerHTML = `<div class="cardtop"><h2>${esc(r.label)}</h2><button class="x" type="button" id="x" aria-label="Close directions">×</button></div>
-    <div class="where">${pill}${SPECIAL[r.label] ? '' : `<span>${esc(where(r).replace(' of ' + r.roadName, '').replace(', off ' + r.roadName, ''))}</span>`}${r.pc.startsWith('RH') ? `<span>${esc(r.pc)}</span>` : ''}</div>
+    <div class="where">${pill}${SPECIAL[r.name] || SPECIAL[r.label] ? '' : `<span>${esc(where(r).replace(' of ' + r.roadName, '').replace(', off ' + r.roadName, ''))}</span>`}${r.pc.startsWith('RH') ? `<span>${esc(r.pc)}</span>` : ''}</div>
     ${legHTML(r, F)}${setback}${navHTML(r)}`;
   $sheet.hidden = !cardOpen;
   go(fitInto(b, 30, WIDE.matches || !cardOpen ? 0 : $sheet.offsetHeight + 8)); // keep the station clear of the card on phones
